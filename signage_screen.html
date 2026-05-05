@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>SignageOS · Ekran</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body {
+  width:100%; height:100vh;
+  background:#000;
+  font-family: sans-serif;
+  overflow:hidden;
+}
+
+/* ── SETUP EKRANI (ilk açılışta) ── */
+#setupScreen {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  height:100vh; background:#080909; color:#e2e8f0;
+}
+.setup-logo { font-size:32px; font-weight:800; color:#fff; margin-bottom:8px; }
+.setup-logo span { color:#00e676; }
+.setup-sub { font-size:14px; color:#718096; margin-bottom:40px; }
+.setup-field {
+  display:flex; flex-direction:column; gap:6px; width:360px; margin-bottom:16px;
+}
+.setup-label { font-size:11px; font-weight:700; color:#718096; letter-spacing:1px; text-transform:uppercase; }
+.setup-input {
+  background:#1a1d1d; border:1px solid rgba(255,255,255,.08);
+  border-radius:8px; padding:12px 16px;
+  color:#e2e8f0; font-size:14px; outline:none;
+  transition:border-color .2s;
+}
+.setup-input:focus { border-color:rgba(0,230,118,.4); }
+.setup-btn {
+  width:360px; padding:14px; border-radius:8px; border:none;
+  background:#00e676; color:#000; font-size:15px; font-weight:700;
+  cursor:pointer; margin-top:8px; transition:background .2s;
+}
+.setup-btn:hover { background:#69f0ae; }
+.setup-note { font-size:12px; color:#4a5568; margin-top:16px; text-align:center; max-width:360px; }
+
+/* ── BEKLEME EKRANI ── */
+#waitScreen {
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  height:100vh; background:#080909; color:#e2e8f0; text-align:center;
+}
+.wait-logo { font-size:24px; font-weight:800; color:#fff; margin-bottom:6px; }
+.wait-logo span { color:#00e676; }
+.wait-id { font-size:12px; color:#4a5568; margin-bottom:32px; font-family:monospace; }
+.wait-spinner {
+  width:40px; height:40px; border:3px solid rgba(0,230,118,.2);
+  border-top-color:#00e676; border-radius:50%;
+  animation:spin .8s linear infinite; margin-bottom:16px;
+}
+.wait-msg { font-size:14px; color:#718096; }
+.wait-status { font-size:12px; color:#4a5568; margin-top:8px; }
+
+/* ── MENÜ FRAME ── */
+#menuFrame {
+  display:none; width:100%; height:100vh;
+  border:none;
+}
+
+/* ── STATUS BAR (sağ alt köşe, çok küçük) ── */
+#statusBar {
+  position:fixed; bottom:12px; right:12px;
+  display:flex; align-items:center; gap:6px;
+  background:rgba(0,0,0,.6); border-radius:20px; padding:5px 10px;
+  font-size:10px; color:rgba(255,255,255,.4); pointer-events:none;
+  z-index:9999;
+}
+.status-dot-sm {
+  width:6px; height:6px; border-radius:50%;
+  background:#00e676; animation:pulse 2s infinite;
+}
+
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+</style>
+</head>
+<body>
+
+<!-- KURULUM EKRANI -->
+<div id="setupScreen">
+  <div class="setup-logo">Signage<span>OS</span></div>
+  <div class="setup-sub">Ekran Kurulumu</div>
+
+  <div class="setup-field">
+    <div class="setup-label">Dükkân ID</div>
+    <input class="setup-input" id="inputShopId" placeholder="Örn: shop_arkas">
+  </div>
+  <div class="setup-field">
+    <div class="setup-label">Ekran ID</div>
+    <input class="setup-input" id="inputScreenId" placeholder="Örn: screen_1">
+  </div>
+  <button class="setup-btn" onclick="startScreen()">▶ Başlat</button>
+  <div class="setup-note">
+    Bu bilgileri Admin Panelindeki ekran kartından alabilirsiniz.<br>
+    Bir kez girilince otomatik kaydedilir.
+  </div>
+</div>
+
+<!-- BEKLEME EKRANI -->
+<div id="waitScreen">
+  <div class="wait-logo">Signage<span>OS</span></div>
+  <div class="wait-id" id="waitId">—</div>
+  <div class="wait-spinner"></div>
+  <div class="wait-msg">Menü bekleniyor...</div>
+  <div class="wait-status" id="waitStatus">Admin panelinden menü URL'si gönderilmesini bekliyor</div>
+</div>
+
+<!-- MENÜ IFRAME -->
+<iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
+
+<!-- STATUS BAR -->
+<div id="statusBar">
+  <div class="status-dot-sm"></div>
+  <span id="statusText">bağlı</span>
+</div>
+
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, update, onValue }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCdKqY3Z4hvfDocb9qRG1LFGX28AWB_EG0",
+  authDomain: "signage-system-ee041.firebaseapp.com",
+  databaseURL: "https://signage-system-ee041-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "signage-system-ee041",
+  storageBucket: "signage-system-ee041.firebasestorage.app",
+  messagingSenderId: "583450867671",
+  appId: "1:583450867671:web:b8409c66bdd6178222fd92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+let shopId   = localStorage.getItem('sgs_shopId');
+let screenId = localStorage.getItem('sgs_screenId');
+let currentUrl = '';
+let pingInterval = null;
+
+// ── Kaydedilmiş ID varsa direkt başlat ──
+if (shopId && screenId) {
+  document.getElementById('setupScreen').style.display = 'none';
+  startListening();
+}
+
+// ── Kurulum butonu ──
+window.startScreen = function() {
+  shopId   = document.getElementById('inputShopId').value.trim();
+  screenId = document.getElementById('inputScreenId').value.trim();
+  if (!shopId || !screenId) { alert('Lütfen her iki alanı da doldurun'); return; }
+  localStorage.setItem('sgs_shopId', shopId);
+  localStorage.setItem('sgs_screenId', screenId);
+  document.getElementById('setupScreen').style.display = 'none';
+  startListening();
+}
+
+function startListening() {
+  // Bekleme ekranını göster
+  document.getElementById('waitScreen').style.display = 'flex';
+  document.getElementById('waitId').textContent = `${shopId} · ${screenId}`;
+
+  // Firebase'i dinle
+  const screenRef = ref(db, `screens/${shopId}/${screenId}`);
+
+  onValue(screenRef, snap => {
+    const data = snap.val();
+    if (!data) {
+      document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. ID\'leri kontrol edin.';
+      return;
+    }
+
+    // Menü URL değiştiyse iframe'i güncelle
+    if (data.menuUrl && data.menuUrl !== currentUrl) {
+      currentUrl = data.menuUrl;
+      loadMenu(data.menuUrl);
+    }
+
+    if (!data.menuUrl) {
+      document.getElementById('waitScreen').style.display = 'flex';
+      document.getElementById('menuFrame').style.display = 'none';
+    }
+  });
+
+  // Her 30 saniyede ping at (online durumu için)
+  sendPing();
+  pingInterval = setInterval(sendPing, 30000);
+}
+
+function loadMenu(url) {
+  const frame = document.getElementById('menuFrame');
+  frame.src = url;
+  document.getElementById('waitScreen').style.display = 'none';
+  frame.style.display = 'block';
+  document.getElementById('statusText').textContent = 'yayında';
+}
+
+async function sendPing() {
+  if (!shopId || !screenId) return;
+  try {
+    await update(ref(db, `screens/${shopId}/${screenId}`), {
+      lastSeen: Date.now(),
+      online: true
+    });
+  } catch(e) {
+    document.getElementById('statusText').textContent = 'bağlantı yok';
+  }
+}
+</script>
+</body>
+</html>
