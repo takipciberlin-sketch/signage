@@ -356,6 +356,9 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
       <div class="nav-item" onclick="showView('menus')">
         <span class="icon">🍽️</span> Menü Yönetimi
       </div>
+      <div class="nav-item" onclick="showView('payments')">
+        <span class="icon">💰</span> Ödemeler
+      </div>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -662,6 +665,7 @@ function renderCurrentView() {
   if (currentView === 'dashboard') renderDashboard();
   else if (currentView === 'screens') renderScreensView();
   else if (currentView === 'menus') renderMenusView();
+  else if (currentView === 'payments') renderPaymentsView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
 }
 
@@ -681,6 +685,16 @@ function renderDashboard() {
   const totalShops = Object.keys(shops).length;
   const monthlyRev = Object.values(shops).reduce((a,s) => a + (s.fee||0), 0);
 
+  // Ödeme uyarıları
+  const overdueShops = Object.entries(shops).filter(([,s]) => {
+    if (!s.fee) return false;
+    return getPaymentStatus(s).status === 'overdue';
+  });
+  const soonShops = Object.entries(shops).filter(([,s]) => {
+    if (!s.fee) return false;
+    return getPaymentStatus(s).status === 'soon';
+  });
+
   document.getElementById('mainContent').innerHTML = `
   <div class="page-header">
     <div>
@@ -689,6 +703,32 @@ function renderDashboard() {
     </div>
     <button class="btn btn-primary" onclick="openAddShop()">+ Dükkân Ekle</button>
   </div>
+
+  ${overdueShops.length > 0 ? `
+  <div style="background:rgba(255,82,82,0.08);border:1px solid rgba(255,82,82,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:24px;">⚠️</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:2px;">${overdueShops.length} dükkânda gecikmiş ödeme</div>
+        <div style="font-size:12px;color:var(--text2);">${overdueShops.map(([,s])=>s.name).join(', ')}</div>
+      </div>
+    </div>
+    <button onclick="showView('payments')" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">İncele →</button>
+  </div>
+  ` : ''}
+
+  ${soonShops.length > 0 ? `
+  <div style="background:rgba(255,171,64,0.08);border:1px solid rgba(255,171,64,0.3);border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:20px;">🔔</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:2px;">${soonShops.length} dükkânın ödeme vadesi yaklaşıyor</div>
+        <div style="font-size:11px;color:var(--text2);">${soonShops.map(([,s])=>s.name).join(', ')}</div>
+      </div>
+    </div>
+    <button onclick="showView('payments')" style="background:rgba(255,171,64,0.15);color:var(--amber);border:1px solid rgba(255,171,64,0.3);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">Hatırlat →</button>
+  </div>
+  ` : ''}
 
   <div class="stats-row">
     <div class="stat-card">
@@ -819,9 +859,24 @@ function renderShopDetail(shopId) {
     <div class="stat-card">
       <div class="stat-label">Aylık Ücret</div>
       <div class="stat-val amber">${shop.fee || 0}€</div>
-      <div class="stat-sub">abonelik</div>
+      <div class="stat-sub" style="color:${(()=>{const p=getPaymentStatus(shop);return p.color;})()};font-weight:600;">${(()=>{const p=getPaymentStatus(shop);return p.label;})()}</div>
     </div>
   </div>
+
+  ${shop.fee ? `
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">💰 Bu Ay Ödeme</div>
+      <div style="font-size:13px;color:var(--text);">
+        Son ödeme: <strong>${shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') + (shop.lastPaidMethod === 'cash' ? ' · 💵 Nakit' : shop.lastPaidMethod === 'bank' ? ' · 🏦 Banka' : '') : '—'}</strong>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="markPaid('${shopId}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 Nakit Ödendi</button>
+      <button onclick="markPaid('${shopId}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 Banka Ödendi</button>
+    </div>
+  </div>
+  ` : ''}
 
   <div class="section-title">Ekranlar</div>
   <div class="screen-grid">
@@ -933,6 +988,196 @@ function renderMenusView() {
       <button class="btn btn-primary" onclick="quickPushAll()">📤 Tüm Ekranlara Gönder</button>
     </div>
   </div>`;
+}
+
+// ── PAYMENTS VIEW ──
+function getPaymentStatus(shop) {
+  // Ödeme durumu hesapla
+  const lastPaid = shop.lastPaidAt ? new Date(shop.lastPaidAt) : null;
+  const startDate = shop.createdAt ? new Date(shop.createdAt) : new Date();
+  const today = new Date();
+
+  // Son ödeme yoksa: ilk fatura tarihi = oluşturulma + 30 gün
+  // Son ödeme varsa: bir sonraki tarih = son ödeme + 30 gün
+  let nextDueDate;
+  if (lastPaid) {
+    nextDueDate = new Date(lastPaid.getTime() + 30 * 24 * 60 * 60 * 1000);
+  } else {
+    nextDueDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  }
+
+  const daysUntilDue = Math.floor((nextDueDate - today) / (24 * 60 * 60 * 1000));
+
+  let status, color, label;
+  if (daysUntilDue < 0) {
+    status = 'overdue';
+    color = 'var(--red)';
+    label = `${Math.abs(daysUntilDue)} gün gecikti`;
+  } else if (daysUntilDue <= 3) {
+    status = 'soon';
+    color = 'var(--amber)';
+    label = daysUntilDue === 0 ? 'Bugün' : `${daysUntilDue} gün kaldı`;
+  } else {
+    status = 'ok';
+    color = 'var(--green)';
+    label = `${daysUntilDue} gün kaldı`;
+  }
+
+  return { status, color, label, nextDueDate, daysUntilDue };
+}
+
+function renderPaymentsView() {
+  const shopList = Object.entries(shops);
+  const today = new Date();
+
+  // Hesaplamalar
+  let totalExpected = 0, totalPaidThisMonth = 0, totalOverdue = 0, overdueCount = 0;
+
+  const shopRows = shopList.map(([id, shop]) => {
+    const fee = shop.fee || 0;
+    const pay = getPaymentStatus(shop);
+    totalExpected += fee;
+
+    if (pay.status === 'overdue') {
+      totalOverdue += fee;
+      overdueCount++;
+    }
+
+    // Bu ay ödenmiş mi?
+    if (shop.lastPaidAt) {
+      const lp = new Date(shop.lastPaidAt);
+      if (lp.getMonth() === today.getMonth() && lp.getFullYear() === today.getFullYear()) {
+        totalPaidThisMonth += fee;
+      }
+    }
+
+    return { id, shop, pay, fee };
+  });
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">💰 Ödemeler</div>
+      <div class="page-sub">Abonelik takibi · Hatırlatmalar · Geçmiş</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Aylık Beklenen</div>
+      <div class="stat-val blue">${totalExpected}€</div>
+      <div class="stat-sub">${shopList.length} dükkân</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bu Ay Ödendi</div>
+      <div class="stat-val green">${totalPaidThisMonth}€</div>
+      <div class="stat-sub">${shopList.filter(([,s]) => {
+        if (!s.lastPaidAt) return false;
+        const lp = new Date(s.lastPaidAt);
+        return lp.getMonth() === today.getMonth() && lp.getFullYear() === today.getFullYear();
+      }).length} dükkân</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bekleyen</div>
+      <div class="stat-val amber">${totalExpected - totalPaidThisMonth - totalOverdue}€</div>
+      <div class="stat-sub">tahsil edilecek</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Gecikmiş</div>
+      <div class="stat-val red">${totalOverdue}€</div>
+      <div class="stat-sub">${overdueCount} dükkân</div>
+    </div>
+  </div>
+
+  <div class="section-title">Dükkân Ödeme Durumları</div>
+
+  ${shopList.length === 0 ? `
+    <div class="empty">
+      <div class="empty-icon">💰</div>
+      <div class="empty-title">Henüz dükkân yok</div>
+      <div class="empty-sub">Dükkân ekleyince ödeme takibi burada görünür</div>
+    </div>
+  ` : `
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${shopRows.map(({id, shop, pay, fee}) => {
+        const wa = (shop.ownerWhatsapp || '').replace(/[^0-9]/g, '');
+        const dueText = pay.nextDueDate.toLocaleDateString('tr-TR');
+        const lastPaidText = shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') : '—';
+        const lastMethod = shop.lastPaidMethod || '';
+
+        // WhatsApp hatırlatma mesajı
+        let waMsg;
+        if (pay.status === 'overdue') {
+          waMsg = `Merhaba ${shop.ownerName || ''}, abonelik ödemeniz (${fee}€) ${Math.abs(pay.daysUntilDue)} gün gecikti. Lütfen ödemenizi yapın. Teşekkürler · SignageOS`;
+        } else if (pay.status === 'soon') {
+          waMsg = `Merhaba ${shop.ownerName || ''}, abonelik ödemeniz (${fee}€) ${pay.daysUntilDue === 0 ? 'bugün' : pay.daysUntilDue + ' gün sonra'} vadesi dolmaktadır. Bilginize · SignageOS`;
+        } else {
+          waMsg = `Merhaba ${shop.ownerName || ''}, abonelik durumunuz hakkında bilgi · SignageOS`;
+        }
+        const waLink = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(waMsg)}` : '';
+
+        return `
+        <div style="background:var(--s1);border:1px solid var(--border);border-left:4px solid ${pay.color};border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1.5fr 1.8fr;gap:14px;align-items:center;">
+
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">${shop.name}</div>
+            <div style="font-size:11px;color:var(--text2);">${shop.ownerName || '—'} · ${shop.address || '—'}</div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Aylık Ücret</div>
+            <div style="font-size:18px;font-weight:700;color:var(--amber);">${fee}€</div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Son Ödeme</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">${lastPaidText}</div>
+            ${lastMethod ? `<div style="font-size:10px;color:var(--text2);margin-top:1px;">${lastMethod === 'cash' ? '💵 Nakit' : '🏦 Banka'}</div>` : ''}
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Sonraki Vade</div>
+            <div style="font-size:12px;font-weight:600;color:${pay.color};">${dueText}</div>
+            <div style="font-size:11px;color:${pay.color};font-weight:500;">${pay.label}</div>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+            <button onclick="markPaid('${id}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 Nakit Ödendi</button>
+            <button onclick="markPaid('${id}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 Banka Ödendi</button>
+            ${waLink ? `<a href="${waLink}" target="_blank" style="text-decoration:none;"><button style="background:rgba(0,230,118,0.05);color:var(--green);border:1px solid rgba(0,230,118,0.2);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💬 Hatırlat</button></a>` : ''}
+          </div>
+
+        </div>`;
+      }).join('')}
+    </div>
+  `}
+  `;
+}
+
+// ── ÖDEME İŞARETLE ──
+window.markPaid = async function(shopId, method) {
+  const shop = shops[shopId];
+  if (!shop) return;
+
+  const methodText = method === 'cash' ? 'Nakit' : 'Banka';
+  if (!confirm(`${shop.name} için ${shop.fee}€ ${methodText} ödemesi alındı olarak işaretlensin mi?`)) return;
+
+  // Ödeme geçmişine ekle
+  const paymentId = 'pay_' + Date.now();
+  await set(ref(db, `payments/${shopId}/${paymentId}`), {
+    amount: shop.fee || 0,
+    method: method,
+    paidAt: Date.now(),
+    note: ''
+  });
+
+  // Dükkâna son ödeme tarihini güncelle
+  await update(ref(db, `shops/${shopId}`), {
+    lastPaidAt: Date.now(),
+    lastPaidMethod: method
+  });
+
+  showToast(`✓ ${shop.name} · ${shop.fee}€ ${methodText} ödendi`, 'success');
 }
 
 // ── ADD SHOP ──
