@@ -362,6 +362,9 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
       <div class="nav-item" onclick="showView('payments')">
         <span class="icon">💰</span> Ödemeler
       </div>
+      <div class="nav-item" onclick="showView('invoices')">
+        <span class="icon">📄</span> Fatura
+      </div>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -762,6 +765,7 @@ function renderCurrentView() {
   else if (currentView === 'menus') renderMenusView();
   else if (currentView === 'payments') renderPaymentsView();
   else if (currentView === 'customers') renderCustomersView();
+  else if (currentView === 'invoices') renderInvoicesView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
 }
 
@@ -1153,6 +1157,452 @@ function getPaymentStatus(shop) {
   }
 
   return { status, color, label, nextDueDate, daysUntilDue };
+}
+
+// ── FATURA STATE ──
+let invoiceSettings = {
+  companyName: 'SignageOS',
+  companyAddress: 'Berlin, DE',
+  taxOffice: '',
+  taxId: '',
+  iban: '',
+  logoUrl: '',
+  footerNote: 'Ödemenizin yukarıdaki IBAN hesabına yapılması rica olunur.\nSignageOS · Dijital Signage Platformu',
+  invoiceCounter: 1
+};
+let selectedInvoiceCustomer = null;
+let invoiceItems = [];
+
+// ── FATURA VIEW ──
+function renderInvoicesView() {
+  // Saved settings'i yükle
+  loadInvoiceSettings();
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">📄 Fatura Ayarları</div>
+      <div class="page-sub">Firma bilgileri · Müşteri seç · Canlı önizleme · İndir</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:flex-start;">
+
+    <!-- SOL: AYARLAR -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;">
+
+      <!-- İŞLETME BİLGİLERİ -->
+      <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        🏢 İşletme Bilgileri
+      </div>
+
+      <div class="menu-field">
+        <div class="field-label">Firma Adı *</div>
+        <input class="field-input" id="invCompanyName" value="${invoiceSettings.companyName}" oninput="updateInvoicePreview()">
+      </div>
+
+      <div class="menu-field" style="margin-top:10px;">
+        <div class="field-label">Adres</div>
+        <textarea class="field-input" id="invCompanyAddress" rows="2" style="resize:vertical;font-family:'Inter',sans-serif;" oninput="updateInvoicePreview()">${invoiceSettings.companyAddress}</textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div class="menu-field">
+          <div class="field-label">Vergi Dairesi</div>
+          <input class="field-input" id="invTaxOffice" value="${invoiceSettings.taxOffice}" oninput="updateInvoicePreview()" placeholder="Berlin Tempelhof">
+        </div>
+        <div class="menu-field">
+          <div class="field-label">Vergi No</div>
+          <input class="field-input" id="invTaxId" value="${invoiceSettings.taxId}" oninput="updateInvoicePreview()" placeholder="DE123/456/78900">
+        </div>
+      </div>
+
+      <div class="menu-field" style="margin-top:10px;">
+        <div class="field-label">Tahsilat IBAN</div>
+        <input class="field-input" id="invIban" value="${invoiceSettings.iban}" oninput="updateInvoicePreview()" placeholder="DE89 3704 0044 0532 0130 00" style="font-family:'DM Mono',monospace;">
+      </div>
+
+      <!-- LOGO -->
+      <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:1.5px;text-transform:uppercase;margin-top:24px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        🖼️ Logo
+      </div>
+
+      <div class="menu-field">
+        <div class="field-label">Logo URL</div>
+        <input class="field-input" id="invLogoUrl" value="${invoiceSettings.logoUrl}" oninput="updateInvoicePreview()" placeholder="https://...">
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button onclick="uploadInvoiceLogo()" style="flex:1;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Logo Yükle</button>
+        ${invoiceSettings.logoUrl ? `<button onclick="clearInvoiceLogo()" style="flex:1;background:rgba(255,82,82,0.08);color:var(--red);border:1px solid rgba(255,82,82,.2);border-radius:7px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">✕ Temizle</button>` : ''}
+      </div>
+
+      <!-- MÜŞTERİ SEÇİMİ -->
+      <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:1.5px;text-transform:uppercase;margin-top:24px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        👥 Fatura Edilecek Müşteri
+      </div>
+
+      <div class="menu-field">
+        <div class="field-label">Müşteri Seç</div>
+        <select class="field-input" id="invCustomerSelect" onchange="onInvoiceCustomerChange()" style="font-family:'Inter',sans-serif;">
+          <option value="">— Müşteri seç —</option>
+          ${Object.entries(shops).map(([id,s]) => `<option value="${id}" ${selectedInvoiceCustomer===id?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
+
+      <!-- HİZMET KALEMLERİ -->
+      <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:1.5px;text-transform:uppercase;margin-top:24px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        🛠️ Hizmet Kalemleri
+      </div>
+
+      <div id="invoiceItemsContainer">
+        ${renderInvoiceItems()}
+      </div>
+
+      <button onclick="addInvoiceItem()" style="width:100%;margin-top:10px;background:var(--s2);color:var(--text2);border:1px dashed var(--dim);border-radius:7px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">+ Kalem Ekle</button>
+
+      <!-- ALT BİLGİ -->
+      <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:1.5px;text-transform:uppercase;margin-top:24px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        📝 Alt Bilgi
+      </div>
+
+      <div class="menu-field">
+        <div class="field-label">Fatura Notu</div>
+        <textarea class="field-input" id="invFooterNote" rows="3" style="resize:vertical;font-family:'Inter',sans-serif;" oninput="updateInvoicePreview()">${invoiceSettings.footerNote}</textarea>
+      </div>
+
+      <!-- AKSIYONLAR -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:24px;">
+        <button onclick="saveInvoiceSettings()" class="btn btn-primary" style="grid-column:1/3;padding:12px;">💾 Ayarları Kaydet</button>
+        <button onclick="downloadInvoicePDF()" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,.3);border-radius:7px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🖨️ PDF İndir</button>
+        <button onclick="sendInvoiceWhatsApp()" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,.3);border-radius:7px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">💬 WhatsApp'tan Gönder</button>
+      </div>
+    </div>
+
+    <!-- SAĞ: CANLI ÖNIZLEME -->
+    <div style="position:sticky;top:20px;">
+      <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        📄 Canlı Önizleme · A4
+      </div>
+      <div id="invoicePreview" style="background:#fff;color:#000;border-radius:8px;padding:40px;min-height:600px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-family:'Inter',sans-serif;">
+        <!-- Buraya preview gelecek -->
+      </div>
+    </div>
+
+  </div>
+  `;
+
+  updateInvoicePreview();
+}
+
+function renderInvoiceItems() {
+  if (invoiceItems.length === 0) {
+    invoiceItems = [
+      { description: 'SignageOS Aylık Abonelik', qty: 1, price: 0 }
+    ];
+  }
+  return invoiceItems.map((item, idx) => `
+    <div style="display:grid;grid-template-columns:2fr 70px 90px 32px;gap:6px;margin-bottom:6px;align-items:center;">
+      <input type="text" value="${item.description}" oninput="updateInvoiceItem(${idx},'description',this.value)" placeholder="Açıklama" style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+      <input type="number" value="${item.qty}" oninput="updateInvoiceItem(${idx},'qty',this.value)" placeholder="Adet" style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+      <input type="number" value="${item.price}" oninput="updateInvoiceItem(${idx},'price',this.value)" placeholder="€" step="0.01" style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+      <button onclick="removeInvoiceItem(${idx})" style="background:rgba(255,82,82,0.08);color:var(--red);border:1px solid rgba(255,82,82,.2);border-radius:6px;padding:8px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">✕</button>
+    </div>
+  `).join('');
+}
+
+window.updateInvoiceItem = function(idx, field, value) {
+  if (field === 'qty' || field === 'price') {
+    invoiceItems[idx][field] = parseFloat(value) || 0;
+  } else {
+    invoiceItems[idx][field] = value;
+  }
+  updateInvoicePreview();
+}
+
+window.addInvoiceItem = function() {
+  invoiceItems.push({ description: '', qty: 1, price: 0 });
+  document.getElementById('invoiceItemsContainer').innerHTML = renderInvoiceItems();
+  updateInvoicePreview();
+}
+
+window.removeInvoiceItem = function(idx) {
+  invoiceItems.splice(idx, 1);
+  if (invoiceItems.length === 0) {
+    invoiceItems.push({ description: '', qty: 1, price: 0 });
+  }
+  document.getElementById('invoiceItemsContainer').innerHTML = renderInvoiceItems();
+  updateInvoicePreview();
+}
+
+window.onInvoiceCustomerChange = function() {
+  const id = document.getElementById('invCustomerSelect').value;
+  selectedInvoiceCustomer = id;
+  // Otomatik kalem doldur (müşterinin aylık ücretine göre)
+  if (id && shops[id] && shops[id].fee) {
+    invoiceItems = [{
+      description: `SignageOS · ${shops[id].name} · Aylık Abonelik`,
+      qty: 1,
+      price: shops[id].fee
+    }];
+    document.getElementById('invoiceItemsContainer').innerHTML = renderInvoiceItems();
+  }
+  updateInvoicePreview();
+}
+
+window.updateInvoicePreview = function() {
+  // Form'dan değerleri oku
+  const settings = {
+    companyName:    document.getElementById('invCompanyName')?.value    || invoiceSettings.companyName,
+    companyAddress: document.getElementById('invCompanyAddress')?.value || invoiceSettings.companyAddress,
+    taxOffice:      document.getElementById('invTaxOffice')?.value      || invoiceSettings.taxOffice,
+    taxId:          document.getElementById('invTaxId')?.value          || invoiceSettings.taxId,
+    iban:           document.getElementById('invIban')?.value           || invoiceSettings.iban,
+    logoUrl:        document.getElementById('invLogoUrl')?.value        || invoiceSettings.logoUrl,
+    footerNote:     document.getElementById('invFooterNote')?.value     || invoiceSettings.footerNote,
+  };
+
+  const customer = selectedInvoiceCustomer ? shops[selectedInvoiceCustomer] : null;
+
+  // Hesapla
+  const subtotal = invoiceItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
+  const kdv = subtotal * 0.19;
+  const total = subtotal + kdv;
+
+  // Fatura numarası
+  const today = new Date();
+  const yearMonth = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}`;
+  const invNumber = `INV-${yearMonth}-${String(invoiceSettings.invoiceCounter).padStart(4,'0')}`;
+  const dateStr = today.toLocaleDateString('de-DE');
+
+  const preview = document.getElementById('invoicePreview');
+  if (!preview) return;
+
+  preview.innerHTML = `
+    <!-- HEADER -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;border-bottom:2px solid #000;padding-bottom:20px;">
+      <div>
+        ${settings.logoUrl ? `<img src="${settings.logoUrl}" style="max-height:50px;max-width:200px;margin-bottom:10px;display:block;">` : ''}
+        <div style="font-size:24px;font-weight:800;color:#000;letter-spacing:-0.5px;">${settings.companyName}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#666;font-weight:600;letter-spacing:1px;text-transform:uppercase;">FATURA</div>
+        <div style="font-size:14px;font-weight:700;color:#000;font-family:'DM Mono',monospace;margin-top:2px;">${invNumber}</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;">${dateStr}</div>
+      </div>
+    </div>
+
+    <!-- FİRMA BİLGİLERİ -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:14px;font-weight:700;color:#000;margin-bottom:4px;">${settings.companyName}</div>
+      <div style="font-size:12px;color:#444;line-height:1.5;white-space:pre-line;">${settings.companyAddress}</div>
+      ${(settings.taxOffice || settings.taxId) ? `
+        <div style="font-size:12px;color:#444;margin-top:4px;">
+          Vergi D.: ${settings.taxOffice || '—'} · No: ${settings.taxId || '—'}
+        </div>
+      ` : ''}
+    </div>
+
+    <!-- FATURA EDİLEN -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:11px;color:#666;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Fatura Edilen</div>
+      <div style="background:#f5f5f5;border-radius:6px;padding:14px 18px;">
+        ${customer ? `
+          <div style="font-size:14px;font-weight:700;color:#000;">${customer.name}</div>
+          <div style="font-size:12px;color:#555;margin-top:3px;">${customer.ownerName || ''} ${customer.ownerName && customer.address ? '·' : ''} ${customer.address || ''}</div>
+          ${customer.taxId ? `<div style="font-size:11px;color:#666;margin-top:3px;font-family:monospace;">Vergi No: ${customer.taxId}</div>` : ''}
+        ` : `
+          <div style="font-size:13px;color:#999;font-style:italic;">— Müşteri seçilmedi —</div>
+        `}
+      </div>
+    </div>
+
+    <!-- HİZMET DETAYLARI -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;color:#666;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Hizmet Detayları</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#000;color:#fff;">
+            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Açıklama</th>
+            <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;width:70px;">Miktar</th>
+            <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;width:120px;">Tutar</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoiceItems.filter(i=>i.description).map(item => `
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:12px 14px;font-size:13px;color:#000;">${item.description}</td>
+              <td style="padding:12px 14px;text-align:center;font-size:13px;color:#000;">${item.qty}</td>
+              <td style="padding:12px 14px;text-align:right;font-size:13px;color:#000;font-weight:600;">€ ${(item.qty * item.price).toFixed(2).replace('.',',')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TOPLAMLAR -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:24px;">
+      <div style="min-width:280px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#444;">
+          <span>Ara Toplam</span>
+          <span>€ ${subtotal.toFixed(2).replace('.',',')}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#444;border-bottom:1px solid #ddd;">
+          <span>KDV (%19)</span>
+          <span>€ ${kdv.toFixed(2).replace('.',',')}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:14px 0;font-size:18px;color:#000;font-weight:800;">
+          <span>TOPLAM</span>
+          <span>€ ${total.toFixed(2).replace('.',',')}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- IBAN -->
+    ${settings.iban ? `
+    <div style="border-left:4px solid #000;background:#f9f9f9;padding:12px 16px;margin-bottom:20px;">
+      <div style="font-size:10px;color:#666;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Tahsilat IBAN</div>
+      <div style="font-size:14px;color:#000;font-family:'DM Mono',monospace;font-weight:600;">${settings.iban}</div>
+    </div>
+    ` : ''}
+
+    <!-- ALT NOT -->
+    ${settings.footerNote ? `
+    <div style="text-align:center;font-size:11px;color:#888;line-height:1.6;border-top:1px solid #eee;padding-top:16px;white-space:pre-line;">${settings.footerNote}</div>
+    ` : ''}
+  `;
+}
+
+async function loadInvoiceSettings() {
+  try {
+    const snap = await get(ref(db, 'invoiceSettings'));
+    if (snap.exists()) {
+      invoiceSettings = { ...invoiceSettings, ...snap.val() };
+    }
+  } catch(err) {
+    console.log('Fatura ayarları yüklenemedi (ilk kullanım):', err);
+  }
+}
+
+window.saveInvoiceSettings = async function() {
+  invoiceSettings = {
+    companyName:    document.getElementById('invCompanyName').value,
+    companyAddress: document.getElementById('invCompanyAddress').value,
+    taxOffice:      document.getElementById('invTaxOffice').value,
+    taxId:          document.getElementById('invTaxId').value,
+    iban:           document.getElementById('invIban').value,
+    logoUrl:        document.getElementById('invLogoUrl').value,
+    footerNote:     document.getElementById('invFooterNote').value,
+    invoiceCounter: invoiceSettings.invoiceCounter || 1
+  };
+  await set(ref(db, 'invoiceSettings'), invoiceSettings);
+  showToast('💾 Fatura ayarları kaydedildi', 'success');
+}
+
+window.uploadInvoiceLogo = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast('⏳ Logo yükleniyor...', 'success');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+        method: 'POST', body: formData
+      });
+      const data = await res.json();
+      document.getElementById('invLogoUrl').value = data.secure_url;
+      updateInvoicePreview();
+      showToast('✓ Logo yüklendi', 'success');
+    } catch(err) {
+      showToast('⚠️ Yükleme başarısız', 'error');
+    }
+  };
+  input.click();
+}
+
+window.clearInvoiceLogo = function() {
+  document.getElementById('invLogoUrl').value = '';
+  updateInvoicePreview();
+}
+
+window.downloadInvoicePDF = function() {
+  if (!selectedInvoiceCustomer) {
+    showToast('⚠️ Önce müşteri seç', 'error');
+    return;
+  }
+  // Print dialog ile PDF olarak kaydet
+  const previewHTML = document.getElementById('invoicePreview').innerHTML;
+  const customer = shops[selectedInvoiceCustomer];
+  const today = new Date();
+  const yearMonth = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}`;
+  const invNumber = `INV-${yearMonth}-${String(invoiceSettings.invoiceCounter).padStart(4,'0')}`;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Fatura ${invNumber} - ${customer.name}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;600&display=swap" rel="stylesheet">
+      <style>
+        @page { size:A4; margin:15mm; }
+        body { margin:0; padding:0; background:#fff; font-family:'Inter',sans-serif; }
+        @media print {
+          body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        }
+      </style>
+    </head>
+    <body>
+      ${previewHTML}
+      <script>
+        window.onload = () => { setTimeout(() => window.print(), 500); };
+      </script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  // Sayaç arttır
+  invoiceSettings.invoiceCounter++;
+  set(ref(db, 'invoiceSettings/invoiceCounter'), invoiceSettings.invoiceCounter);
+}
+
+window.sendInvoiceWhatsApp = function() {
+  if (!selectedInvoiceCustomer) {
+    showToast('⚠️ Önce müşteri seç', 'error');
+    return;
+  }
+  const customer = shops[selectedInvoiceCustomer];
+  const wa = (customer.ownerWhatsapp || customer.ownerPhone || '').replace(/[^0-9]/g, '');
+  if (!wa) {
+    showToast('⚠️ Müşterinin WhatsApp/telefon numarası yok', 'error');
+    return;
+  }
+
+  const subtotal = invoiceItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
+  const total = subtotal * 1.19;
+  const today = new Date();
+  const yearMonth = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}`;
+  const invNumber = `INV-${yearMonth}-${String(invoiceSettings.invoiceCounter).padStart(4,'0')}`;
+
+  const msg = `Merhaba ${customer.ownerName || customer.name},
+
+${customer.name} için ${today.toLocaleDateString('de-DE')} tarihli faturanız hazırdır.
+
+Fatura No: ${invNumber}
+Tutar: € ${total.toFixed(2).replace('.',',')} (KDV dahil)
+
+Detaylı fatura PDF'ini ayrı göndereceğim.
+
+İyi günler,
+${invoiceSettings.companyName}`;
+
+  window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 // ── MÜŞTERİLER VIEW ──
