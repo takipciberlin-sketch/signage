@@ -388,9 +388,10 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
 
 <!-- ADD SHOP MODAL -->
 <div class="modal-overlay" id="addShopModal">
-  <div class="modal">
+  <div class="modal" style="width:600px;max-width:95vw;">
     <div class="modal-title">Yeni Dükkân Ekle</div>
     <div class="modal-sub">Dükkân bilgilerini girin, ekranlar otomatik oluşturulur</div>
+
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div class="menu-field">
         <div class="field-label">Dükkân Adı</div>
@@ -400,15 +401,54 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
         <div class="field-label">Adres</div>
         <input class="field-input" id="newShopAddr" placeholder="Örn: Berlin, Steglitz">
       </div>
+    </div>
+
+    <!-- PLAN SEÇİMİ -->
+    <div class="field-label" style="margin-top:18px;margin-bottom:10px;">Abonelik Planı</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+
+      <div class="plan-card" data-plan="basic" data-screens="3" data-fee="79" onclick="selectPlan(this)" style="
+        background:var(--s2); border:1.5px solid var(--border); border-radius:10px;
+        padding:14px 12px; cursor:pointer; transition:all .2s; text-align:center;
+      ">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;">Başlangıç</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:2px;">79€</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:500;">/ay · 3 ekran</div>
+      </div>
+
+      <div class="plan-card" data-plan="pro" data-screens="7" data-fee="149" onclick="selectPlan(this)" style="
+        background:rgba(0,230,118,0.06); border:1.5px solid rgba(0,230,118,0.4); border-radius:10px;
+        padding:14px 12px; cursor:pointer; transition:all .2s; text-align:center; position:relative;
+      ">
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:9px;font-weight:800;padding:2px 8px;border-radius:10px;letter-spacing:.5px;">POPÜLER</div>
+        <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;">Profesyonel</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:2px;">149€</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:500;">/ay · 7 ekran</div>
+      </div>
+
+      <div class="plan-card" data-plan="premium" data-screens="15" data-fee="249" onclick="selectPlan(this)" style="
+        background:var(--s2); border:1.5px solid var(--border); border-radius:10px;
+        padding:14px 12px; cursor:pointer; transition:all .2s; text-align:center;
+      ">
+        <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;">Premium</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:2px;">249€</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:500;">/ay · 15 ekran</div>
+      </div>
+
+    </div>
+
+    <!-- ÖZEL AYARLAR (opsiyonel - plandan farklıysa) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
       <div class="menu-field">
         <div class="field-label">Ekran Sayısı</div>
-        <input class="field-input" id="newShopScreens" type="number" min="1" max="20" value="7">
+        <input class="field-input" id="newShopScreens" type="number" min="1" max="50" value="7">
       </div>
       <div class="menu-field">
         <div class="field-label">Aylık Ücret (€)</div>
-        <input class="field-input" id="newShopFee" type="number" value="49">
+        <input class="field-input" id="newShopFee" type="number" value="149">
       </div>
     </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('addShopModal')">İptal</button>
       <button class="btn btn-primary" onclick="addShop()">✓ Ekle</button>
@@ -815,6 +855,20 @@ function renderMenusView() {
 }
 
 // ── ADD SHOP ──
+window.selectPlan = function(card) {
+  // Tüm kartları sıfırla
+  document.querySelectorAll('.plan-card').forEach(c => {
+    c.style.background = 'var(--s2)';
+    c.style.borderColor = 'var(--border)';
+  });
+  // Seçilen kartı vurgula
+  card.style.background = 'rgba(0,230,118,0.06)';
+  card.style.borderColor = 'rgba(0,230,118,0.4)';
+  // Inputları otomatik doldur
+  document.getElementById('newShopScreens').value = card.dataset.screens;
+  document.getElementById('newShopFee').value = card.dataset.fee;
+}
+
 window.openAddShop = function() {
   document.getElementById('addShopModal').classList.add('open');
 }
