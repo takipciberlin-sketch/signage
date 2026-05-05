@@ -270,6 +270,68 @@ html,body { min-height:100vh; background:var(--bg); font-family:'Syne',sans-seri
 </head>
 <body>
 
+<!-- ŞİFRE KORUMASI -->
+<div id="loginOverlay" style="
+  position:fixed; inset:0;
+  background:#080909; z-index:9999;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  font-family:'Syne',sans-serif;
+">
+  <div style="font-size:32px;font-weight:800;color:#fff;margin-bottom:6px;">
+    Signage<span style="color:#00e676;">OS</span>
+  </div>
+  <div style="font-size:13px;color:#718096;margin-bottom:32px;letter-spacing:2px;">YÖNETİCİ GİRİŞİ</div>
+
+  <div style="width:340px;display:flex;flex-direction:column;gap:12px;">
+    <input id="loginPassword" type="password" placeholder="Şifre" style="
+      background:#1a1d1d; border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; padding:14px 18px;
+      color:#e2e8f0; font-size:15px; outline:none;
+      font-family:'Syne',sans-serif; width:100%;
+    " onkeydown="if(event.key==='Enter')checkLogin()">
+
+    <button onclick="checkLogin()" style="
+      padding:14px; border-radius:10px; border:none;
+      background:#00e676; color:#000; font-size:15px; font-weight:700;
+      cursor:pointer; font-family:'Syne',sans-serif;
+    ">▶ Giriş</button>
+
+    <div id="loginError" style="
+      color:#ff5252; font-size:12px; text-align:center;
+      margin-top:4px; min-height:18px;
+    "></div>
+  </div>
+
+  <div style="position:absolute;bottom:24px;font-size:11px;color:#4a5568;">
+    🔒 Yetkili erişim · Tüm girişler kaydedilir
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "Musluk2000";  // Şifren burada
+
+function checkLogin() {
+  const input = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+
+  if (input === ADMIN_PASSWORD) {
+    sessionStorage.setItem('sgs_auth', 'ok');
+    document.getElementById('loginOverlay').style.display = 'none';
+  } else {
+    err.textContent = '❌ Yanlış şifre';
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+// Daha önce giriş yapıldı mı kontrol et
+if (sessionStorage.getItem('sgs_auth') === 'ok') {
+  document.getElementById('loginOverlay').style.display = 'none';
+} else {
+  setTimeout(() => document.getElementById('loginPassword').focus(), 100);
+}
+</script>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">Signage<span>OS</span></div>
