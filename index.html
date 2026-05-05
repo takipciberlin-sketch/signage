@@ -1174,9 +1174,9 @@ let selectedInvoiceCustomer = null;
 let invoiceItems = [];
 
 // ── FATURA VIEW ──
-function renderInvoicesView() {
+async function renderInvoicesView() {
   // Saved settings'i yükle
-  loadInvoiceSettings();
+  await loadInvoiceSettings();
 
   document.getElementById('mainContent').innerHTML = `
   <div class="page-header">
