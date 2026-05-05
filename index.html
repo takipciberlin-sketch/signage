@@ -388,11 +388,13 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
 
 <!-- ADD SHOP MODAL -->
 <div class="modal-overlay" id="addShopModal">
-  <div class="modal" style="width:600px;max-width:95vw;">
-    <div class="modal-title">Yeni Dükkân Ekle</div>
-    <div class="modal-sub">Dükkân bilgilerini girin, ekranlar otomatik oluşturulur</div>
+  <div class="modal" style="width:640px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title" id="shopModalTitle">Yeni Dükkân Ekle</div>
+    <div class="modal-sub" id="shopModalSub">Dükkân bilgilerini girin, ekranlar otomatik oluşturulur</div>
 
-    <div style="display:flex;flex-direction:column;gap:12px;">
+    <!-- DÜKKÂN BİLGİLERİ -->
+    <div class="field-label" style="margin-top:8px;margin-bottom:10px;">🏪 Dükkân Bilgileri</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
       <div class="menu-field">
         <div class="field-label">Dükkân Adı</div>
         <input class="field-input" id="newShopName" placeholder="Örn: Pasta & Salat Steglitz">
@@ -403,8 +405,31 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
       </div>
     </div>
 
+    <!-- SAHİP BİLGİLERİ -->
+    <div class="field-label" style="margin-top:18px;margin-bottom:10px;">👤 Dükkân Sahibi</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="menu-field">
+        <div class="field-label">Ad Soyad</div>
+        <input class="field-input" id="newShopOwner" placeholder="Örn: Ahmet Yılmaz">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="menu-field">
+          <div class="field-label">📧 E-mail</div>
+          <input class="field-input" id="newShopEmail" type="email" placeholder="ornek@email.com">
+        </div>
+        <div class="menu-field">
+          <div class="field-label">📞 Telefon</div>
+          <input class="field-input" id="newShopPhone" type="tel" placeholder="+49 30 1234567">
+        </div>
+      </div>
+      <div class="menu-field">
+        <div class="field-label">💬 WhatsApp Numarası</div>
+        <input class="field-input" id="newShopWhatsapp" type="tel" placeholder="+49 175 1234567">
+      </div>
+    </div>
+
     <!-- PLAN SEÇİMİ -->
-    <div class="field-label" style="margin-top:18px;margin-bottom:10px;">Abonelik Planı</div>
+    <div class="field-label" style="margin-top:18px;margin-bottom:10px;">📦 Abonelik Planı</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
 
       <div class="plan-card" data-plan="basic" data-screens="3" onclick="selectPlan(this)" style="
@@ -437,7 +462,7 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
 
     </div>
 
-    <!-- ÖZEL AYARLAR (opsiyonel - plandan farklıysa) -->
+    <!-- EKRAN VE ÜCRET -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
       <div class="menu-field">
         <div class="field-label">Ekran Sayısı</div>
@@ -445,13 +470,13 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
       </div>
       <div class="menu-field">
         <div class="field-label">Aylık Ücret (€)</div>
-        <input class="field-input" id="newShopFee" type="number" value="149">
+        <input class="field-input" id="newShopFee" type="number" placeholder="Manuel gir">
       </div>
     </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('addShopModal')">İptal</button>
-      <button class="btn btn-primary" onclick="addShop()">✓ Ekle</button>
+      <button class="btn btn-primary" id="shopSaveBtn" onclick="addShop()">✓ Ekle</button>
     </div>
   </div>
 </div>
@@ -712,17 +737,73 @@ function renderShopDetail(shopId) {
   const screenList = Object.entries(shopScreens);
   const online = screenList.filter(([,s]) => isOnline(s)).length;
 
+  // WhatsApp link (numarayı temizle)
+  const wa = (shop.ownerWhatsapp || '').replace(/[^0-9]/g, '');
+  const waLink = wa ? `https://wa.me/${wa}` : '';
+
+  // Telefon link
+  const phoneLink = shop.ownerPhone ? `tel:${shop.ownerPhone.replace(/\s/g,'')}` : '';
+
+  // E-mail link
+  const emailLink = shop.ownerEmail ? `mailto:${shop.ownerEmail}` : '';
+
   document.getElementById('mainContent').innerHTML = `
   <div class="page-header">
     <div>
       <div class="page-title">${shop.name}</div>
-      <div class="page-sub">${shop.address} · ${screenList.length} ekran · Aylık ${shop.fee}€</div>
+      <div class="page-sub">${shop.address || '—'} · ${screenList.length} ekran · Aylık ${shop.fee || 0}€</div>
     </div>
     <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" onclick="openEditShop('${shopId}')">✏️ Düzenle</button>
       <button class="btn btn-ghost" onclick="pushToAll('${shopId}')">📤 Tümüne Gönder</button>
       <button class="btn btn-danger" onclick="deleteShop('${shopId}')">🗑 Sil</button>
     </div>
   </div>
+
+  ${(shop.ownerName || shop.ownerEmail || shop.ownerPhone || shop.ownerWhatsapp) ? `
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:.3px;">👤 Dükkân Sahibi</div>
+      ${shop.ownerName ? `<div style="font-size:13px;color:var(--text);font-weight:600;">${shop.ownerName}</div>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+
+      ${shop.ownerEmail ? `
+      <a href="${emailLink}" style="text-decoration:none;">
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='rgba(64,196,255,.3)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-size:18px;">📧</div>
+          <div style="overflow:hidden;">
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;">E-mail</div>
+            <div style="font-size:12px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${shop.ownerEmail}</div>
+          </div>
+        </div>
+      </a>` : ''}
+
+      ${shop.ownerPhone ? `
+      <a href="${phoneLink}" style="text-decoration:none;">
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='rgba(255,171,64,.3)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-size:18px;">📞</div>
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Telefon</div>
+            <div style="font-size:12px;color:var(--text);font-weight:500;">${shop.ownerPhone}</div>
+          </div>
+        </div>
+      </a>` : ''}
+
+      ${shop.ownerWhatsapp ? `
+      <a href="${waLink}" target="_blank" style="text-decoration:none;">
+        <div style="background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='rgba(0,230,118,.5)';this.style.background='rgba(0,230,118,0.1)'" onmouseout="this.style.borderColor='rgba(0,230,118,.2)';this.style.background='rgba(0,230,118,0.05)'">
+          <div style="font-size:18px;">💬</div>
+          <div>
+            <div style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:1px;text-transform:uppercase;">WhatsApp</div>
+            <div style="font-size:12px;color:var(--text);font-weight:500;">${shop.ownerWhatsapp}</div>
+          </div>
+        </div>
+      </a>` : ''}
+
+    </div>
+  </div>
+  ` : ''}
 
   <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
     <div class="stat-card">
@@ -737,7 +818,7 @@ function renderShopDetail(shopId) {
     </div>
     <div class="stat-card">
       <div class="stat-label">Aylık Ücret</div>
-      <div class="stat-val amber">${shop.fee}€</div>
+      <div class="stat-val amber">${shop.fee || 0}€</div>
       <div class="stat-sub">abonelik</div>
     </div>
   </div>
@@ -869,20 +950,111 @@ window.selectPlan = function(card) {
   document.getElementById('newShopFee').focus();
 }
 
+// State - şu an düzenlenen dükkân
+let editingShopId = null;
+
 window.openAddShop = function() {
+  editingShopId = null;
+  document.getElementById('shopModalTitle').textContent = 'Yeni Dükkân Ekle';
+  document.getElementById('shopModalSub').textContent = 'Dükkân bilgilerini girin, ekranlar otomatik oluşturulur';
+  document.getElementById('shopSaveBtn').textContent = '✓ Ekle';
+
+  // Tüm alanları temizle
+  document.getElementById('newShopName').value = '';
+  document.getElementById('newShopAddr').value = '';
+  document.getElementById('newShopOwner').value = '';
+  document.getElementById('newShopEmail').value = '';
+  document.getElementById('newShopPhone').value = '';
+  document.getElementById('newShopWhatsapp').value = '';
+  document.getElementById('newShopScreens').value = '7';
+  document.getElementById('newShopFee').value = '';
+
+  document.getElementById('addShopModal').classList.add('open');
+}
+
+window.openEditShop = function(shopId) {
+  const shop = shops[shopId];
+  if (!shop) return;
+
+  editingShopId = shopId;
+  document.getElementById('shopModalTitle').textContent = '✏️ Dükkân Düzenle';
+  document.getElementById('shopModalSub').textContent = `${shop.name} bilgilerini güncelle`;
+  document.getElementById('shopSaveBtn').textContent = '💾 Kaydet';
+
+  // Mevcut bilgileri doldur
+  document.getElementById('newShopName').value = shop.name || '';
+  document.getElementById('newShopAddr').value = shop.address || '';
+  document.getElementById('newShopOwner').value = shop.ownerName || '';
+  document.getElementById('newShopEmail').value = shop.ownerEmail || '';
+  document.getElementById('newShopPhone').value = shop.ownerPhone || '';
+  document.getElementById('newShopWhatsapp').value = shop.ownerWhatsapp || '';
+  const currentScreens = Object.keys(screens[shopId] || {}).length;
+  document.getElementById('newShopScreens').value = currentScreens || 1;
+  document.getElementById('newShopFee').value = shop.fee || '';
+
   document.getElementById('addShopModal').classList.add('open');
 }
 
 window.addShop = async function() {
-  const name    = document.getElementById('newShopName').value.trim();
-  const addr    = document.getElementById('newShopAddr').value.trim();
-  const screens_ = parseInt(document.getElementById('newShopScreens').value) || 1;
-  const fee     = parseInt(document.getElementById('newShopFee').value) || 49;
+  const name      = document.getElementById('newShopName').value.trim();
+  const addr      = document.getElementById('newShopAddr').value.trim();
+  const owner     = document.getElementById('newShopOwner').value.trim();
+  const email     = document.getElementById('newShopEmail').value.trim();
+  const phone     = document.getElementById('newShopPhone').value.trim();
+  const whatsapp  = document.getElementById('newShopWhatsapp').value.trim();
+  const screens_  = parseInt(document.getElementById('newShopScreens').value) || 1;
+  const fee       = parseInt(document.getElementById('newShopFee').value) || 0;
 
   if (!name) { showToast('Dükkân adı boş olamaz', 'error'); return; }
 
+  // DÜZENLEME MODU
+  if (editingShopId) {
+    const oldScreens = Object.keys(screens[editingShopId] || {}).length;
+
+    await update(ref(db, `shops/${editingShopId}`), {
+      name, address: addr, fee,
+      ownerName: owner, ownerEmail: email,
+      ownerPhone: phone, ownerWhatsapp: whatsapp,
+      updatedAt: Date.now()
+    });
+
+    // Ekran sayısı değişmişse - manuel onay
+    if (screens_ > oldScreens) {
+      const diff = screens_ - oldScreens;
+      if (confirm(`${diff} yeni ekran eklenecek. Onaylıyor musun?`)) {
+        for (let i = oldScreens + 1; i <= screens_; i++) {
+          await set(ref(db, `screens/${editingShopId}/screen_${i}`), {
+            name: `Ekran ${i}`, shopId: editingShopId, menuUrl: '', menuName: 'Menü yüklenmedi',
+            lastSeen: null, online: false, createdAt: Date.now()
+          });
+        }
+        showToast(`✓ ${diff} yeni ekran eklendi · Aylık ücreti güncellemeyi unutma!`, 'success');
+      }
+    } else if (screens_ < oldScreens) {
+      const diff = oldScreens - screens_;
+      if (confirm(`${diff} ekran silinecek (en sondakiler). Emin misin?`)) {
+        const screenIds = Object.keys(screens[editingShopId] || {}).sort();
+        for (let i = screens_; i < oldScreens; i++) {
+          await remove(ref(db, `screens/${editingShopId}/${screenIds[i]}`));
+        }
+        showToast(`✓ ${diff} ekran silindi`, 'success');
+      }
+    }
+
+    closeModal('addShopModal');
+    showToast(`💾 ${name} güncellendi`, 'success');
+    editingShopId = null;
+    return;
+  }
+
+  // YENİ EKLEME MODU
   const shopId = 'shop_' + Date.now();
-  await set(ref(db, `shops/${shopId}`), { name, address: addr, fee, createdAt: Date.now(), active: true });
+  await set(ref(db, `shops/${shopId}`), {
+    name, address: addr, fee,
+    ownerName: owner, ownerEmail: email,
+    ownerPhone: phone, ownerWhatsapp: whatsapp,
+    createdAt: Date.now(), active: true
+  });
 
   for (let i = 1; i <= screens_; i++) {
     await set(ref(db, `screens/${shopId}/screen_${i}`), {
