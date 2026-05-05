@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Pasta & Salat · Steglitz</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0c0b09;
+  --card:   #131210;
+  --card2:  #181614;
+  --gold:   #c8a84b;
+  --gold2:  #e2c97e;
+  --cream:  #ede8df;
+  --muted:  #7a7060;
+  --dim:    #3a3428;
+  --line:   rgba(200,168,75,0.12);
+  --red:    #9b2c2c;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+html, body {
+  width: 3840px;
+  height: 2160px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'Jost', sans-serif;
+  color: var(--cream);
+}
+
+/* ─── SLIDER ─── */
+#slider { width:100%; height:100%; position:relative; }
+
+.slide {
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity 1.6s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ─── PROGRESS ─── */
+.prog {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  width: 0%;
+  z-index: 10;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 52px 120px 44px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 56px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.brand-sub {
+  font-size: 20px;
+  font-weight: 200;
+  letter-spacing: 6px;
+  color: var(--muted);
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.slide-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 72px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--cream);
+  letter-spacing: -1px;
+}
+.slide-label strong {
+  font-weight: 600;
+  font-style: normal;
+  color: var(--gold2);
+}
+
+.nav-dots {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.ndot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  background: transparent;
+  cursor: pointer;
+  transition: background .4s, transform .3s;
+}
+.ndot.on { background: var(--gold); transform: scale(1.2); }
+
+/* ─── PASTA GRID ─── */
+.pasta-wrap {
+  flex: 1;
+  padding: 48px 120px 80px;
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  grid-template-rows: repeat(2,1fr);
+  gap: 24px;
+}
+
+.pcard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: border-color .4s, transform .4s;
+}
+.pcard:hover {
+  border-color: rgba(200,168,75,.3);
+  transform: translateY(-4px);
+}
+
+/* Fotoğraf alanı */
+.pcard-img {
+  width: 100%;
+  height: 44%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(.85) saturate(1.1);
+  background: var(--card2);
+}
+
+/* Fotoğraf placeholder - gerçek foto eklenene kadar */
+.pcard-img-ph {
+  width: 100%;
+  height: 44%;
+  background: linear-gradient(135deg, #1a1710 0%, #221e14 50%, #1a1710 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dim);
+  font-size: 28px;
+  font-weight: 200;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Gold accent üst çizgi */
+.pcard::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity .4s;
+}
+.pcard:hover::after { opacity: 1; }
+
+.pcard-body {
+  flex: 1;
+  padding: 24px 30px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pcard-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 40px;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--cream);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.pcard-desc {
+  font-size: 19px;
+  font-weight: 300;
+  color: var(--muted);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.pcard-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.pcard-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--gold2);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.pcard-price span {
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.pcard-note {
+  font-size: 17px;
+  font-weight: 200;
+  color: var(--muted);
+  font-style: italic;
+  text-align: right;
+  line-height: 1.4;
+}
+
+.halal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--red);
+  color: var(--red);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+  font-family: 'Jost', sans-serif;
+}
+
+/* ─── SALAT GRID ─── */
+.salat-wrap {
+  flex: 1;
+  padding: 48px 120px 80px;
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 30px;
+}
+
+.scard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: border-color .4s, transform .4s;
+}
+.scard:hover {
+  border-color: rgba(200,168,75,.28);
+  transform: translateY(-5px);
+}
+
+.scard-img {
+  width: 100%;
+  height: 52%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(.88) saturate(1.15);
+}
+.scard-img-ph {
+  width: 100%;
+  height: 52%;
+  background: linear-gradient(160deg, #101510 0%, #1a2014 60%, #101510 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dim);
+  font-size: 24px;
+  font-weight: 200;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.scard-body {
+  flex: 1;
+  padding: 36px 44px 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.scard-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 58px;
+  font-weight: 700;
+  color: var(--cream);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.scard-rule {
+  width: 48px;
+  height: 1px;
+  background: var(--gold);
+  opacity: .5;
+  margin-bottom: 20px;
+}
+
+.scard-desc {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--muted);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.scard-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 66px;
+  font-weight: 700;
+  color: var(--gold2);
+  letter-spacing: -1px;
+  margin-top: 20px;
+  line-height: 1;
+}
+.scard-price sup {
+  font-size: 30px;
+  font-weight: 300;
+  color: var(--muted);
+  vertical-align: super;
+  margin-left: 3px;
+}
+
+/* ─── FOOTER ─── */
+.foot {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 72px;
+  padding: 0 120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+.foot-txt {
+  font-size: 20px;
+  font-weight: 200;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.foot-halal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 200;
+  color: var(--muted);
+}
+
+/* ─── ANIMATIONS ─── */
+.slide.active .pcard,
+.slide.active .scard {
+  animation: riseIn .6s cubic-bezier(.4,0,.2,1) backwards;
+}
+.slide.active .pcard:nth-child(1), .slide.active .scard:nth-child(1) { animation-delay:.06s }
+.slide.active .pcard:nth-child(2), .slide.active .scard:nth-child(2) { animation-delay:.12s }
+.slide.active .pcard:nth-child(3), .slide.active .scard:nth-child(3) { animation-delay:.18s }
+.slide.active .pcard:nth-child(4), .slide.active .scard:nth-child(4) { animation-delay:.24s }
+.slide.active .pcard:nth-child(5) { animation-delay:.30s }
+.slide.active .pcard:nth-child(6) { animation-delay:.36s }
+.slide.active .pcard:nth-child(7) { animation-delay:.42s }
+.slide.active .pcard:nth-child(8) { animation-delay:.48s }
+
+.slide.active .slide-label { animation: riseIn .5s ease .0s backwards; }
+
+@keyframes riseIn {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+</style>
+</head>
+<body>
+<div id="slider">
+
+<!-- ══════════════════════════════════════
+     SLIDE 1 · PASTA
+══════════════════════════════════════ -->
+<div class="slide active" id="s0">
+  <div class="prog" id="p0"></div>
+
+  <div class="topbar">
+    <div>
+      <div class="brand-name">Pasta &amp; Salat</div>
+      <div class="brand-sub">Steglitz &middot; Berlin</div>
+    </div>
+    <div class="slide-label"><strong>Pasta</strong> Gerichte</div>
+    <div class="nav-dots">
+      <div class="ndot on"  onclick="goTo(0)"></div>
+      <div class="ndot"     onclick="goTo(1)"></div>
+    </div>
+  </div>
+
+  <div class="pasta-wrap">
+
+    <!-- Bolognese -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div>
+          <div class="pcard-name">Bolognese</div>
+          <div class="pcard-desc">mit hausgem. Bolognese und Tomatensoße</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">11,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carbonara -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div>
+            <div class="pcard-name">Carbonara</div>
+            <div class="pcard-desc">mit Ei, ParmesanSahne-Soße und Puten Schinken</div>
+          </div>
+          <div class="halal">حلال</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">10,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pollo -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div>
+            <div class="pcard-name">Pollo</div>
+            <div class="pcard-desc">mit Hähnchenbrustfilet und Champignon-Sahne-Soße</div>
+          </div>
+          <div class="halal">حلال</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">11,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrabiata -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div>
+          <div class="pcard-name">Arrabiata</div>
+          <div class="pcard-desc">mit Knoblauch, Cherrytomaten in Pikanter Tomatensoße</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">10,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Napoli -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div>
+          <div class="pcard-name">Napoli</div>
+          <div class="pcard-desc">mit Tomatensoße und frischem Basilikum</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">9,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Veggie -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div>
+          <div class="pcard-name">Veggie</div>
+          <div class="pcard-desc">mit frischem Gemüse, Knoblauch, Tomaten-Sahnesoße</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">11,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gorgonzola -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div>
+          <div class="pcard-name">Gorgonzola</div>
+          <div class="pcard-desc">mit Sahnesoße und Gorgonzola</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">11,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aglio e Olio -->
+    <div class="pcard">
+      <div class="pcard-img-ph">foto</div>
+      <div class="pcard-body">
+        <div>
+          <div class="pcard-name">Aglio e Olio</div>
+          <div class="pcard-desc">mit Olivenöl, Knoblauch, Cherrytomaten und Chili</div>
+        </div>
+        <div class="pcard-footer">
+          <div class="pcard-price">10,90<span>€</span></div>
+          <div class="pcard-note">Penne oder<br>Spaghetti</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- pasta-wrap -->
+
+  <div class="foot">
+    <div class="foot-txt">Alle Preise inkl. MwSt.</div>
+    <div class="foot-halal">
+      <div class="halal" style="width:34px;height:34px;font-size:12px;">حلال</div>
+      Halal-zertifizierte Zutaten
+    </div>
+  </div>
+</div><!-- slide 0 -->
+
+
+<!-- ══════════════════════════════════════
+     SLIDE 2 · SALAT
+══════════════════════════════════════ -->
+<div class="slide" id="s1">
+  <div class="prog" id="p1"></div>
+
+  <div class="topbar">
+    <div>
+      <div class="brand-name">Pasta &amp; Salat</div>
+      <div class="brand-sub">Steglitz &middot; Berlin</div>
+    </div>
+    <div class="slide-label"><strong>Frische</strong> Salate</div>
+    <div class="nav-dots">
+      <div class="ndot"     onclick="goTo(0)"></div>
+      <div class="ndot on"  onclick="goTo(1)"></div>
+    </div>
+  </div>
+
+  <div class="salat-wrap">
+
+    <!-- Mista -->
+    <div class="scard">
+      <div class="scard-img-ph">foto</div>
+      <div class="scard-body">
+        <div class="scard-name">Mista</div>
+        <div class="scard-rule"></div>
+        <div class="scard-desc">Bunt gemischter Salat mit Gurken, Tomaten und Zwiebeln</div>
+        <div class="scard-price">7,90<sup>€</sup></div>
+      </div>
+    </div>
+
+    <!-- Rucola -->
+    <div class="scard">
+      <div class="scard-img-ph">foto</div>
+      <div class="scard-body">
+        <div class="scard-name">Rucola</div>
+        <div class="scard-rule"></div>
+        <div class="scard-desc">Rucolasalat mit Cherrytomaten, frische Champignon, Parmesankäse</div>
+        <div class="scard-price">8,50<sup>€</sup></div>
+      </div>
+    </div>
+
+    <!-- Tonno -->
+    <div class="scard">
+      <div class="scard-img-ph">foto</div>
+      <div class="scard-body">
+        <div class="scard-name">Tonno</div>
+        <div class="scard-rule"></div>
+        <div class="scard-desc">Bunt gemischter Salat mit Thunfisch, Mozzarella, Gurken, Tomaten und Zwiebeln</div>
+        <div class="scard-price">10,90<sup>€</sup></div>
+      </div>
+    </div>
+
+    <!-- Chicken -->
+    <div class="scard">
+      <div class="scard-img-ph">foto</div>
+      <div class="scard-body">
+        <div style="display:flex;align-items:center;gap:18px;justify-content:center;margin-bottom:20px;">
+          <div class="scard-name" style="margin-bottom:0">Chicken</div>
+          <div class="halal" style="width:44px;height:44px;font-size:14px;">حلال</div>
+        </div>
+        <div class="scard-rule"></div>
+        <div class="scard-desc">Bunt gemischter Salat mit Hähnchenbrustfilet, Mozzarella, Gurken, Tomaten und Zwiebeln</div>
+        <div class="scard-price">11,90<sup>€</sup></div>
+      </div>
+    </div>
+
+  </div><!-- salat-wrap -->
+
+  <div class="foot">
+    <div class="foot-txt">Alle Preise inkl. MwSt.</div>
+    <div class="foot-halal">
+      <div class="halal" style="width:34px;height:34px;font-size:12px;">حلال</div>
+      Halal-zertifizierte Zutaten
+    </div>
+  </div>
+</div><!-- slide 1 -->
+
+</div><!-- #slider -->
+
+<script>
+const TOTAL    = 2;
+const DURATION = 12000;
+let cur = 0, tmr = null;
+
+function goTo(i) {
+  document.getElementById('s'+cur).classList.remove('active');
+  cur = i;
+  document.getElementById('s'+cur).classList.add('active');
+  syncDots();
+  runProgress();
+  clearTimeout(tmr);
+  tmr = setTimeout(() => goTo((cur+1) % TOTAL), DURATION);
+}
+
+function syncDots() {
+  document.querySelectorAll('.ndot').forEach((d,i) =>
+    d.classList.toggle('on', i === cur));
+}
+
+function runProgress() {
+  document.querySelectorAll('.prog').forEach(p => {
+    p.style.transition = 'none';
+    p.style.width = '0%';
+  });
+  const pb = document.getElementById('p'+cur);
+  if (!pb) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    pb.style.transition = `width ${DURATION}ms linear`;
+    pb.style.width = '100%';
+  }));
+}
+
+runProgress();
+tmr = setTimeout(() => goTo(1), DURATION);
+</script>
+</body>
+</html>
