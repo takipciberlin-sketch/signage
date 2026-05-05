@@ -356,6 +356,9 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
       <div class="nav-item" onclick="showView('menus')">
         <span class="icon">🍽️</span> Menü Yönetimi
       </div>
+      <div class="nav-item" onclick="showView('customers')">
+        <span class="icon">👥</span> Müşteriler
+      </div>
       <div class="nav-item" onclick="showView('payments')">
         <span class="icon">💰</span> Ödemeler
       </div>
@@ -758,6 +761,7 @@ function renderCurrentView() {
   else if (currentView === 'screens') renderScreensView();
   else if (currentView === 'menus') renderMenusView();
   else if (currentView === 'payments') renderPaymentsView();
+  else if (currentView === 'customers') renderCustomersView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
 }
 
@@ -767,7 +771,6 @@ window.selectShop = function(id) {
   renderShopList();
   renderCurrentView();
 }
-
 // ── DASHBOARD ──
 function renderDashboard() {
   const allScreens = Object.values(screens).flatMap(s => Object.values(s));
@@ -1150,6 +1153,105 @@ function getPaymentStatus(shop) {
   }
 
   return { status, color, label, nextDueDate, daysUntilDue };
+}
+
+// ── MÜŞTERİLER VIEW ──
+function renderCustomersView() {
+  const shopList = Object.entries(shops);
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">👥 Müşteriler</div>
+      <div class="page-sub">Tüm müşteri bilgileri · Düzenle · Yeni ekle</div>
+    </div>
+    <button class="btn btn-primary" onclick="openAddShop()">+ Yeni Müşteri</button>
+  </div>
+
+  ${shopList.length === 0 ? `
+    <div class="empty">
+      <div class="empty-icon">👥</div>
+      <div class="empty-title">Henüz müşteri yok</div>
+      <div class="empty-sub">Sağ üstten yeni müşteri ekleyebilirsin</div>
+    </div>
+  ` : `
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    ${shopList.map(([id, shop]) => {
+      const shopScreens = screens[id] || {};
+      const screenCount = Object.keys(shopScreens).length;
+      const online = Object.values(shopScreens).filter(s => isOnline(s)).length;
+      const pay = getPaymentStatus(shop);
+      const wa = (shop.ownerWhatsapp || shop.ownerPhone || '').replace(/[^0-9]/g, '');
+      const waLink = wa ? `https://wa.me/${wa}` : '';
+
+      return `
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px 24px;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(255,255,255,.1)'" onmouseout="this.style.borderColor='var(--border)'">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+
+          <!-- Sol: Dükkân + Sahip -->
+          <div style="flex:1;min-width:200px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <div style="font-size:16px;font-weight:700;color:var(--text);">${shop.name}</div>
+              <div style="font-size:10px;padding:2px 8px;border-radius:10px;background:${pay.status==='overdue'?'rgba(255,82,82,0.15)':pay.status==='soon'?'rgba(255,171,64,0.15)':'rgba(0,230,118,0.1)'};color:${pay.color};font-weight:700;">${pay.label}</div>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">${shop.address || '—'}</div>
+
+            ${shop.ownerName ? `
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">👤 ${shop.ownerName}</div>
+            ` : ''}
+
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${shop.ownerEmail ? `
+              <a href="mailto:${shop.ownerEmail}" style="text-decoration:none;display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);transition:all .2s;" onmouseover="this.style.borderColor='rgba(64,196,255,.3)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                📧 ${shop.ownerEmail}
+              </a>` : ''}
+              ${shop.ownerPhone ? `
+              <a href="tel:${shop.ownerPhone}" style="text-decoration:none;display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);transition:all .2s;" onmouseover="this.style.borderColor='rgba(255,171,64,.3)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                📞 ${shop.ownerPhone}
+              </a>` : ''}
+              ${wa ? `
+              <a href="${waLink}" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:5px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,.2);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--green);transition:all .2s;" onmouseover="this.style.background='rgba(0,230,118,0.12)'" onmouseout="this.style.background='rgba(0,230,118,0.05)'">
+                💬 WhatsApp
+              </a>` : ''}
+            </div>
+
+            ${(shop.taxId || shop.iban) ? `
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+              ${shop.taxId ? `<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;">🧾 ${shop.taxId}</div>` : ''}
+              ${shop.iban ? `<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;">🏦 ${shop.iban}</div>` : ''}
+            </div>
+            ` : ''}
+          </div>
+
+          <!-- Orta: İstatistikler -->
+          <div style="display:flex;gap:12px;flex-shrink:0;">
+            <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
+              <div style="font-size:22px;font-weight:700;color:var(--blue);">${screenCount}</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Ekran</div>
+            </div>
+            <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
+              <div style="font-size:22px;font-weight:700;color:var(--green);">${online}</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Online</div>
+            </div>
+            <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
+              <div style="font-size:22px;font-weight:700;color:var(--amber);">${shop.fee || 0}€</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">/Ay</div>
+            </div>
+          </div>
+
+          <!-- Sağ: Butonlar -->
+          <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+            <button onclick="openEditShop('${id}')" style="background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">✏️ Düzenle</button>
+            <button onclick="selectShop('${id}')" style="background:rgba(0,230,118,0.08);color:var(--green);border:1px solid rgba(0,230,118,.2);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">📺 Ekranlar</button>
+            <button onclick="deleteShop('${id}')" style="background:rgba(255,82,82,0.08);color:var(--red);border:1px solid rgba(255,82,82,.2);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">🗑 Sil</button>
+          </div>
+
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  `}`;
 }
 
 function renderPaymentsView() {
