@@ -176,31 +176,99 @@ function startListening() {
   document.getElementById('waitScreen').style.display = 'flex';
   document.getElementById('waitId').textContent = `${shopId} · ${screenId}`;
 
-  // Firebase'i dinle
+  // Sadece ekranı dinle (artık dükkân ayarına gerek yok)
   const screenRef = ref(db, `screens/${shopId}/${screenId}`);
 
+  let currentScreenData = null;
+
   onValue(screenRef, snap => {
-    const data = snap.val();
-    if (!data) {
+    currentScreenData = snap.val();
+    if (!currentScreenData) {
       document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. ID\'leri kontrol edin.';
       return;
     }
+    decideAndLoad();
+  });
 
-    // Menü URL değiştiyse iframe'i güncelle
-    if (data.menuUrl && data.menuUrl !== currentUrl) {
-      currentUrl = data.menuUrl;
-      loadMenu(data.menuUrl);
+  function decideAndLoad() {
+    if (!currentScreenData) return;
+
+    let urlToShow = currentScreenData.menuUrl;
+    let source = 'manual';
+
+    // Ekrana özel zaman bazlı menü aktif mi?
+    if (currentScreenData.scheduleEnabled) {
+      const scheduledUrl = getScheduledMenu(currentScreenData);
+      if (scheduledUrl) {
+        urlToShow = scheduledUrl;
+        source = 'schedule';
+      }
     }
 
-    if (!data.menuUrl) {
+    if (urlToShow && urlToShow !== currentUrl) {
+      currentUrl = urlToShow;
+      loadMenu(urlToShow);
+      console.log(`[SignageOS] Menü yüklendi (${source}):`, urlToShow);
+    }
+
+    if (!urlToShow) {
       document.getElementById('waitScreen').style.display = 'flex';
       document.getElementById('menuFrame').style.display = 'none';
+      document.getElementById('menuImage').style.display = 'none';
+      document.getElementById('menuVideo').style.display = 'none';
     }
-  });
+  }
+
+  // Her 1 dakikada bir saati kontrol et (zaman bazlı geçişler için)
+  setInterval(decideAndLoad, 60000);
 
   // Her 30 saniyede ping at (online durumu için)
   sendPing();
   pingInterval = setInterval(sendPing, 30000);
+}
+
+// Saate göre hangi menüyü göstereceğini belirle (ekran objesi alır)
+function getScheduledMenu(screen) {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  function timeToMinutes(timeStr) {
+    if (!timeStr) return -1;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function inRange(start, end, current) {
+    if (start === -1 || end === -1) return false;
+    if (end > start) {
+      return current >= start && current < end;
+    } else {
+      return current >= start || current < end;
+    }
+  }
+
+  // Sabah
+  const morningStart = timeToMinutes(screen.scheduleMorningStart);
+  const morningEnd   = timeToMinutes(screen.scheduleMorningEnd);
+  if (screen.scheduleMorningUrl && inRange(morningStart, morningEnd, currentMinutes)) {
+    return screen.scheduleMorningUrl;
+  }
+
+  // Öğlen
+  const noonStart = timeToMinutes(screen.scheduleNoonStart);
+  const noonEnd   = timeToMinutes(screen.scheduleNoonEnd);
+  if (screen.scheduleNoonUrl && inRange(noonStart, noonEnd, currentMinutes)) {
+    return screen.scheduleNoonUrl;
+  }
+
+  // Akşam
+  const eveningStart = timeToMinutes(screen.scheduleEveningStart);
+  const eveningEnd   = timeToMinutes(screen.scheduleEveningEnd);
+  if (screen.scheduleEveningUrl && inRange(eveningStart, eveningEnd, currentMinutes)) {
+    return screen.scheduleEveningUrl;
+  }
+
+  return null;
 }
 
 function loadMenu(url) {

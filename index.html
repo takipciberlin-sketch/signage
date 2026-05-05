@@ -533,6 +533,88 @@ if (sessionStorage.getItem('sgs_auth') === 'ok') {
   </div>
 </div>
 
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="scheduleModal">
+  <div class="modal" style="width:760px;max-width:96vw;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:6px;">
+      <div>
+        <div class="modal-title">🕐 Zaman Bazlı Otomatik Menü</div>
+        <div class="modal-sub" id="scheduleModalSub">Bu ekran için saate göre menü değiştirme</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Aktif</span>
+        <div id="scheduleToggle" onclick="toggleScreenSchedule()" style="
+          width:42px;height:22px;border-radius:11px;
+          background:var(--dim);
+          position:relative;transition:background .2s;
+        ">
+          <div id="scheduleToggleHandle" style="
+            position:absolute;top:2px;left:2px;
+            width:18px;height:18px;border-radius:50%;
+            background:#fff;transition:left .2s;
+          "></div>
+        </div>
+      </label>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;">
+
+      <!-- SABAH -->
+      <div style="background:rgba(255,171,64,0.05);border:1px solid rgba(255,171,64,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🍳</span>
+          <span style="font-size:13px;font-weight:700;color:var(--amber);">Kahvaltı</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="sched_morning_start" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="sched_morning_end" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="sched_morning_url" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <button onclick="uploadScreenScheduleMenu('morning')" style="width:100%;background:rgba(255,171,64,0.1);color:var(--amber);border:1px solid rgba(255,171,64,0.25);border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+      </div>
+
+      <!-- ÖĞLEN -->
+      <div style="background:rgba(64,196,255,0.05);border:1px solid rgba(64,196,255,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🥗</span>
+          <span style="font-size:13px;font-weight:700;color:var(--blue);">Öğlen</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="sched_noon_start" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="sched_noon_end" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="sched_noon_url" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <button onclick="uploadScreenScheduleMenu('noon')" style="width:100%;background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+      </div>
+
+      <!-- AKŞAM -->
+      <div style="background:rgba(155,89,182,0.05);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🍽️</span>
+          <span style="font-size:13px;font-weight:700;color:#c39bd3;">Akşam</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="sched_evening_start" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="sched_evening_end" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="sched_evening_url" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <button onclick="uploadScreenScheduleMenu('evening')" style="width:100%;background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.25);border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+      </div>
+
+    </div>
+
+    <div style="margin-top:14px;padding:10px 14px;background:var(--s2);border-radius:8px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;">
+      <span>ℹ️</span>
+      <span>Aktif edilince bu TV ekranı saate göre otomatik menü değiştirir. Pasif olunca normal menü kullanılır.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('scheduleModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveScreenSchedule()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove, serverTimestamp }
@@ -878,91 +960,6 @@ function renderShopDetail(shopId) {
   </div>
   ` : ''}
 
-  <!-- ZAMAN BAZLI MENÜ - HER ZAMAN GÖRÜNÜR -->
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:24px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-      <div>
-        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">🕐 Zaman Bazlı Otomatik Menü</div>
-        <div style="font-size:12px;color:var(--text2);">Saate göre menü otomatik değişir · TV'ye dokunmadan çalışır</div>
-      </div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
-        <span style="font-size:12px;font-weight:600;color:var(--text2);">Aktif</span>
-        <div onclick="toggleSchedule('${shopId}')" style="
-          width:42px;height:22px;border-radius:11px;
-          background:${shop.scheduleEnabled ? 'var(--green)' : 'var(--dim)'};
-          position:relative;transition:background .2s;
-        ">
-          <div style="
-            position:absolute;top:2px;
-            left:${shop.scheduleEnabled ? '22px' : '2px'};
-            width:18px;height:18px;border-radius:50%;
-            background:#fff;transition:left .2s;
-          "></div>
-        </div>
-      </label>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-
-      <!-- SABAH -->
-      <div style="background:rgba(255,171,64,0.05);border:1px solid rgba(255,171,64,0.2);border-radius:10px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:18px;">🍳</span>
-          <span style="font-size:13px;font-weight:700;color:var(--amber);">Kahvaltı</span>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <input type="time" id="schedule_morning_start_${shopId}" value="${shop.scheduleMorningStart || '07:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
-          <input type="time" id="schedule_morning_end_${shopId}" value="${shop.scheduleMorningEnd || '11:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
-        </div>
-        <input type="text" id="schedule_morning_url_${shopId}" value="${shop.scheduleMorningUrl || ''}" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
-        <div style="display:flex;gap:6px;">
-          <button onclick="uploadScheduleMenu('${shopId}','morning')" style="flex:1;background:rgba(255,171,64,0.1);color:var(--amber);border:1px solid rgba(255,171,64,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
-          <button onclick="saveSchedule('${shopId}')" style="flex:1;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💾 Kaydet</button>
-        </div>
-      </div>
-
-      <!-- ÖĞLEN -->
-      <div style="background:rgba(64,196,255,0.05);border:1px solid rgba(64,196,255,0.2);border-radius:10px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:18px;">🥗</span>
-          <span style="font-size:13px;font-weight:700;color:var(--blue);">Öğlen</span>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <input type="time" id="schedule_noon_start_${shopId}" value="${shop.scheduleNoonStart || '11:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
-          <input type="time" id="schedule_noon_end_${shopId}" value="${shop.scheduleNoonEnd || '16:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
-        </div>
-        <input type="text" id="schedule_noon_url_${shopId}" value="${shop.scheduleNoonUrl || ''}" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
-        <div style="display:flex;gap:6px;">
-          <button onclick="uploadScheduleMenu('${shopId}','noon')" style="flex:1;background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
-          <button onclick="saveSchedule('${shopId}')" style="flex:1;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💾 Kaydet</button>
-        </div>
-      </div>
-
-      <!-- AKŞAM -->
-      <div style="background:rgba(155,89,182,0.05);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:18px;">🍽️</span>
-          <span style="font-size:13px;font-weight:700;color:#c39bd3;">Akşam</span>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <input type="time" id="schedule_evening_start_${shopId}" value="${shop.scheduleEveningStart || '16:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
-          <input type="time" id="schedule_evening_end_${shopId}" value="${shop.scheduleEveningEnd || '23:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
-        </div>
-        <input type="text" id="schedule_evening_url_${shopId}" value="${shop.scheduleEveningUrl || ''}" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
-        <div style="display:flex;gap:6px;">
-          <button onclick="uploadScheduleMenu('${shopId}','evening')" style="flex:1;background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
-          <button onclick="saveSchedule('${shopId}')" style="flex:1;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💾 Kaydet</button>
-        </div>
-      </div>
-
-    </div>
-
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;">
-      <span>ℹ️</span>
-      <span>Aktif edilince TV ekranları saate göre otomatik menü değiştirir. Her TV ayrı ayrı kontrol edebilirsin (ekran kartından).</span>
-    </div>
-  </div>
-
   <div class="section-title">Ekranlar</div>
   <div class="screen-grid">
     ${screenList.map(([sid, screen]) => renderScreenCard(sid, screen, shopId)).join('')}
@@ -977,6 +974,9 @@ function renderShopDetail(shopId) {
 
 function renderScreenCard(sid, screen, shopId) {
   const st = getStatus(screen);
+  const scheduleActive = screen.scheduleEnabled;
+  const scheduleHasMenu = screen.scheduleMorningUrl || screen.scheduleNoonUrl || screen.scheduleEveningUrl;
+
   return `
   <div class="screen-card ${st}">
     <div class="screen-header">
@@ -1005,10 +1005,20 @@ function renderScreenCard(sid, screen, shopId) {
       <div class="menu-label">Aktif Menü</div>
       <div class="menu-name">${screen.menuName || 'Menü yüklenmedi'}</div>
       <div class="menu-updated">${screen.menuUrl ? '🔗 URL mevcut' : '⚠️ URL yok'}</div>
+      ${scheduleActive ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(0,230,118,0.2);font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:5px;">
+          <span>🕐</span><span>Zaman bazlı menü AKTİF</span>
+        </div>
+      ` : scheduleHasMenu ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--dim);font-size:10px;color:var(--text2);display:flex;align-items:center;gap:5px;">
+          <span>🕐</span><span>Zaman ayarlı (kapalı)</span>
+        </div>
+      ` : ''}
     </div>
     <div class="screen-actions">
-      <button class="screen-btn push" onclick="openPush('${shopId}','${sid}')">📤 Menü Gönder</button>
-      <button class="screen-btn restart" onclick="pingScreen('${shopId}','${sid}')">🔄 Ping</button>
+      <button class="screen-btn push" onclick="openPush('${shopId}','${sid}')">📤 Menü</button>
+      <button class="screen-btn restart" onclick="openScheduleModal('${shopId}','${sid}')" style="background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.2);">⏰ Zaman</button>
+      <button class="screen-btn restart" onclick="pingScreen('${shopId}','${sid}')">🔄</button>
     </div>
   </div>`;
 }
@@ -1265,33 +1275,77 @@ window.markPaid = async function(shopId, method) {
   showToast(`✓ ${shop.name} · ${shop.fee}€ ${methodText} ödendi`, 'success');
 }
 
-// ── ZAMAN BAZLI MENÜ ──
-window.toggleSchedule = async function(shopId) {
-  const shop = shops[shopId];
-  if (!shop) return;
-  const newState = !shop.scheduleEnabled;
-  await update(ref(db, `shops/${shopId}`), { scheduleEnabled: newState });
-  showToast(newState ? '✓ Otomatik menü aktif' : 'Otomatik menü kapatıldı', 'success');
+// ── ZAMAN BAZLI MENÜ (EKRAN BAZLI) ──
+let activeScheduleScreen = null; // {shopId, screenId}
+let scheduleEnabledTemp = false;
+
+window.openScheduleModal = function(shopId, screenId) {
+  const screen = screens[shopId]?.[screenId];
+  if (!screen) return;
+  activeScheduleScreen = { shopId, screenId };
+
+  document.getElementById('scheduleModalSub').textContent = `${screen.name || screenId} için zaman bazlı menü ayarı`;
+
+  // Mevcut değerleri yükle
+  document.getElementById('sched_morning_start').value = screen.scheduleMorningStart || '07:00';
+  document.getElementById('sched_morning_end').value   = screen.scheduleMorningEnd   || '11:00';
+  document.getElementById('sched_morning_url').value   = screen.scheduleMorningUrl   || '';
+
+  document.getElementById('sched_noon_start').value    = screen.scheduleNoonStart    || '11:00';
+  document.getElementById('sched_noon_end').value      = screen.scheduleNoonEnd      || '16:00';
+  document.getElementById('sched_noon_url').value      = screen.scheduleNoonUrl      || '';
+
+  document.getElementById('sched_evening_start').value = screen.scheduleEveningStart || '16:00';
+  document.getElementById('sched_evening_end').value   = screen.scheduleEveningEnd   || '23:00';
+  document.getElementById('sched_evening_url').value   = screen.scheduleEveningUrl   || '';
+
+  // Toggle durumu
+  scheduleEnabledTemp = !!screen.scheduleEnabled;
+  updateScheduleToggleUI();
+
+  document.getElementById('scheduleModal').classList.add('open');
 }
 
-window.saveSchedule = async function(shopId) {
+function updateScheduleToggleUI() {
+  const toggle = document.getElementById('scheduleToggle');
+  const handle = document.getElementById('scheduleToggleHandle');
+  if (scheduleEnabledTemp) {
+    toggle.style.background = 'var(--green)';
+    handle.style.left = '22px';
+  } else {
+    toggle.style.background = 'var(--dim)';
+    handle.style.left = '2px';
+  }
+}
+
+window.toggleScreenSchedule = function() {
+  scheduleEnabledTemp = !scheduleEnabledTemp;
+  updateScheduleToggleUI();
+}
+
+window.saveScreenSchedule = async function() {
+  if (!activeScheduleScreen) return;
+  const { shopId, screenId } = activeScheduleScreen;
+
   const data = {
-    scheduleMorningStart: document.getElementById(`schedule_morning_start_${shopId}`).value,
-    scheduleMorningEnd:   document.getElementById(`schedule_morning_end_${shopId}`).value,
-    scheduleMorningUrl:   document.getElementById(`schedule_morning_url_${shopId}`).value.trim(),
-    scheduleNoonStart:    document.getElementById(`schedule_noon_start_${shopId}`).value,
-    scheduleNoonEnd:      document.getElementById(`schedule_noon_end_${shopId}`).value,
-    scheduleNoonUrl:      document.getElementById(`schedule_noon_url_${shopId}`).value.trim(),
-    scheduleEveningStart: document.getElementById(`schedule_evening_start_${shopId}`).value,
-    scheduleEveningEnd:   document.getElementById(`schedule_evening_end_${shopId}`).value,
-    scheduleEveningUrl:   document.getElementById(`schedule_evening_url_${shopId}`).value.trim(),
+    scheduleEnabled:      scheduleEnabledTemp,
+    scheduleMorningStart: document.getElementById('sched_morning_start').value,
+    scheduleMorningEnd:   document.getElementById('sched_morning_end').value,
+    scheduleMorningUrl:   document.getElementById('sched_morning_url').value.trim(),
+    scheduleNoonStart:    document.getElementById('sched_noon_start').value,
+    scheduleNoonEnd:      document.getElementById('sched_noon_end').value,
+    scheduleNoonUrl:      document.getElementById('sched_noon_url').value.trim(),
+    scheduleEveningStart: document.getElementById('sched_evening_start').value,
+    scheduleEveningEnd:   document.getElementById('sched_evening_end').value,
+    scheduleEveningUrl:   document.getElementById('sched_evening_url').value.trim(),
   };
-  await update(ref(db, `shops/${shopId}`), data);
-  showToast('💾 Zaman ayarları kaydedildi', 'success');
+
+  await update(ref(db, `screens/${shopId}/${screenId}`), data);
+  closeModal('scheduleModal');
+  showToast(`💾 Zaman ayarları kaydedildi · ${scheduleEnabledTemp ? 'AKTİF' : 'kapalı'}`, 'success');
 }
 
-window.uploadScheduleMenu = function(shopId, slot) {
-  // Cloudinary upload via gizli input
+window.uploadScreenScheduleMenu = function(slot) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*,video/*,.html';
@@ -1314,8 +1368,7 @@ window.uploadScheduleMenu = function(shopId, slot) {
       const data = await res.json();
       const url = data.secure_url;
 
-      // Doğru input'a koy
-      document.getElementById(`schedule_${slot}_url_${shopId}`).value = url;
+      document.getElementById(`sched_${slot}_url`).value = url;
       showToast('✓ Yüklendi · Kaydet butonuna basmayı unutma', 'success');
     } catch(err) {
       showToast('⚠️ Yükleme başarısız', 'error');
