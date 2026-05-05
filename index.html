@@ -878,6 +878,91 @@ function renderShopDetail(shopId) {
   </div>
   ` : ''}
 
+  <!-- ZAMAN BAZLI MENÜ - HER ZAMAN GÖRÜNÜR -->
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">🕐 Zaman Bazlı Otomatik Menü</div>
+        <div style="font-size:12px;color:var(--text2);">Saate göre menü otomatik değişir · TV'ye dokunmadan çalışır</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Aktif</span>
+        <div onclick="toggleSchedule('${shopId}')" style="
+          width:42px;height:22px;border-radius:11px;
+          background:${shop.scheduleEnabled ? 'var(--green)' : 'var(--dim)'};
+          position:relative;transition:background .2s;
+        ">
+          <div style="
+            position:absolute;top:2px;
+            left:${shop.scheduleEnabled ? '22px' : '2px'};
+            width:18px;height:18px;border-radius:50%;
+            background:#fff;transition:left .2s;
+          "></div>
+        </div>
+      </label>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+
+      <!-- SABAH -->
+      <div style="background:rgba(255,171,64,0.05);border:1px solid rgba(255,171,64,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🍳</span>
+          <span style="font-size:13px;font-weight:700;color:var(--amber);">Kahvaltı</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="schedule_morning_start_${shopId}" value="${shop.scheduleMorningStart || '07:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="schedule_morning_end_${shopId}" value="${shop.scheduleMorningEnd || '11:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="schedule_morning_url_${shopId}" value="${shop.scheduleMorningUrl || ''}" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <div style="display:flex;gap:6px;">
+          <button onclick="uploadScheduleMenu('${shopId}','morning')" style="flex:1;background:rgba(255,171,64,0.1);color:var(--amber);border:1px solid rgba(255,171,64,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+          <button onclick="saveSchedule('${shopId}')" style="flex:1;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💾 Kaydet</button>
+        </div>
+      </div>
+
+      <!-- ÖĞLEN -->
+      <div style="background:rgba(64,196,255,0.05);border:1px solid rgba(64,196,255,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🥗</span>
+          <span style="font-size:13px;font-weight:700;color:var(--blue);">Öğlen</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="schedule_noon_start_${shopId}" value="${shop.scheduleNoonStart || '11:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="schedule_noon_end_${shopId}" value="${shop.scheduleNoonEnd || '16:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="schedule_noon_url_${shopId}" value="${shop.scheduleNoonUrl || ''}" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <div style="display:flex;gap:6px;">
+          <button onclick="uploadScheduleMenu('${shopId}','noon')" style="flex:1;background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+          <button onclick="saveSchedule('${shopId}')" style="flex:1;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💾 Kaydet</button>
+        </div>
+      </div>
+
+      <!-- AKŞAM -->
+      <div style="background:rgba(155,89,182,0.05);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🍽️</span>
+          <span style="font-size:13px;font-weight:700;color:#c39bd3;">Akşam</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="schedule_evening_start_${shopId}" value="${shop.scheduleEveningStart || '16:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="schedule_evening_end_${shopId}" value="${shop.scheduleEveningEnd || '23:00'}" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="schedule_evening_url_${shopId}" value="${shop.scheduleEveningUrl || ''}" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <div style="display:flex;gap:6px;">
+          <button onclick="uploadScheduleMenu('${shopId}','evening')" style="flex:1;background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+          <button onclick="saveSchedule('${shopId}')" style="flex:1;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💾 Kaydet</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;">
+      <span>ℹ️</span>
+      <span>Aktif edilince TV ekranları saate göre otomatik menü değiştirir. Her TV ayrı ayrı kontrol edebilirsin (ekran kartından).</span>
+    </div>
+  </div>
+
   <div class="section-title">Ekranlar</div>
   <div class="screen-grid">
     ${screenList.map(([sid, screen]) => renderScreenCard(sid, screen, shopId)).join('')}
@@ -1178,6 +1263,65 @@ window.markPaid = async function(shopId, method) {
   });
 
   showToast(`✓ ${shop.name} · ${shop.fee}€ ${methodText} ödendi`, 'success');
+}
+
+// ── ZAMAN BAZLI MENÜ ──
+window.toggleSchedule = async function(shopId) {
+  const shop = shops[shopId];
+  if (!shop) return;
+  const newState = !shop.scheduleEnabled;
+  await update(ref(db, `shops/${shopId}`), { scheduleEnabled: newState });
+  showToast(newState ? '✓ Otomatik menü aktif' : 'Otomatik menü kapatıldı', 'success');
+}
+
+window.saveSchedule = async function(shopId) {
+  const data = {
+    scheduleMorningStart: document.getElementById(`schedule_morning_start_${shopId}`).value,
+    scheduleMorningEnd:   document.getElementById(`schedule_morning_end_${shopId}`).value,
+    scheduleMorningUrl:   document.getElementById(`schedule_morning_url_${shopId}`).value.trim(),
+    scheduleNoonStart:    document.getElementById(`schedule_noon_start_${shopId}`).value,
+    scheduleNoonEnd:      document.getElementById(`schedule_noon_end_${shopId}`).value,
+    scheduleNoonUrl:      document.getElementById(`schedule_noon_url_${shopId}`).value.trim(),
+    scheduleEveningStart: document.getElementById(`schedule_evening_start_${shopId}`).value,
+    scheduleEveningEnd:   document.getElementById(`schedule_evening_end_${shopId}`).value,
+    scheduleEveningUrl:   document.getElementById(`schedule_evening_url_${shopId}`).value.trim(),
+  };
+  await update(ref(db, `shops/${shopId}`), data);
+  showToast('💾 Zaman ayarları kaydedildi', 'success');
+}
+
+window.uploadScheduleMenu = function(shopId, slot) {
+  // Cloudinary upload via gizli input
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,video/*,.html';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    showToast('⏳ Yükleniyor: ' + file.name, 'success');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('resource_type', 'auto');
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      const url = data.secure_url;
+
+      // Doğru input'a koy
+      document.getElementById(`schedule_${slot}_url_${shopId}`).value = url;
+      showToast('✓ Yüklendi · Kaydet butonuna basmayı unutma', 'success');
+    } catch(err) {
+      showToast('⚠️ Yükleme başarısız', 'error');
+    }
+  };
+  input.click();
 }
 
 // ── ADD SHOP ──
