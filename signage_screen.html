@@ -2,6 +2,9 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>SignageOS · Ekran</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
@@ -59,7 +62,9 @@ html, body {
 
 /* ── MENÜ FRAME ── */
 #menuFrame {
-  display:none; width:100%; height:100vh;
+  display:none;
+  position:fixed; inset:0;
+  width:100vw; height:100vh;
   border:none;
 }
 
@@ -113,6 +118,12 @@ html, body {
 
 <!-- MENÜ IFRAME -->
 <iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
+
+<!-- MENÜ GÖRSEL -->
+<img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;">
+
+<!-- MENÜ VİDEO -->
+<video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;"></video>
 
 <!-- STATUS BAR -->
 <div id="statusBar">
@@ -194,9 +205,32 @@ function startListening() {
 
 function loadMenu(url) {
   const frame = document.getElementById('menuFrame');
-  frame.src = url;
+  const img   = document.getElementById('menuImage');
+  const vid   = document.getElementById('menuVideo');
+
+  // Hepsini gizle
+  frame.style.display = 'none';
+  img.style.display   = 'none';
+  vid.style.display   = 'none';
   document.getElementById('waitScreen').style.display = 'none';
-  frame.style.display = 'block';
+
+  const lower = url.toLowerCase();
+
+  if (lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)) {
+    // GÖRSEL
+    img.src = url;
+    img.style.display = 'block';
+  } else if (lower.match(/\.(mp4|webm|mov)(\?|$)/)) {
+    // VIDEO
+    vid.src = url;
+    vid.style.display = 'block';
+    vid.play().catch(()=>{});
+  } else {
+    // HTML veya diğer URL
+    frame.src = url;
+    frame.style.display = 'block';
+  }
+
   document.getElementById('statusText').textContent = 'yayında';
 }
 
