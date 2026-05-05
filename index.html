@@ -356,20 +356,49 @@ html,body { min-height:100vh; background:var(--bg); font-family:'Syne',sans-seri
 
 <!-- PUSH MENU MODAL -->
 <div class="modal-overlay" id="pushMenuModal">
-  <div class="modal">
-    <div class="modal-title">Menü Gönder</div>
-    <div class="modal-sub" id="pushModalSub">Ekrana menü URL'si gönderilecek</div>
-    <div class="menu-field">
-      <div class="field-label">Menü URL</div>
-      <input class="field-input" id="pushMenuUrl" placeholder="https://... veya dosya yolu">
+  <div class="modal" style="width:560px;">
+    <div class="modal-title">📤 Menü Gönder</div>
+    <div class="modal-sub" id="pushModalSub">Ekrana menü gönderilecek</div>
+
+    <!-- DROPZONE -->
+    <div id="dropZone" style="
+      border:2px dashed var(--dim); border-radius:12px;
+      padding:40px 20px; text-align:center; cursor:pointer;
+      transition:all .3s; margin:16px 0; background:var(--s2);
+    " ondragover="event.preventDefault();this.style.borderColor='var(--green)';this.style.background='rgba(0,230,118,0.05)'"
+      ondragleave="this.style.borderColor='var(--dim)';this.style.background='var(--s2)'"
+      ondrop="handleDrop(event)"
+      onclick="document.getElementById('fileInput').click()">
+      <div id="dropIcon" style="font-size:36px;margin-bottom:10px;">📁</div>
+      <div id="dropText" style="font-size:14px;font-weight:600;color:var(--text);">Dosyayı buraya sürükle bırak</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:6px;">JPG, PNG, MP4, HTML · veya tıkla</div>
     </div>
-    <div class="menu-field" style="margin-top:12px;">
-      <div class="field-label">Ekran Adı (opsiyonel)</div>
-      <input class="field-input" id="pushScreenName" placeholder="Örn: Kasa Üstü Ekran">
+    <input type="file" id="fileInput" accept="image/*,video/*,.html" style="display:none" onchange="handleFileSelect(this.files[0])">
+
+    <!-- UPLOAD PROGRESS -->
+    <div id="uploadProgress" style="display:none;margin:12px 0;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Yükleniyor...</span>
+        <span id="uploadPercent" style="font-size:12px;font-weight:700;color:var(--green);">0%</span>
+      </div>
+      <div style="background:var(--dim);border-radius:4px;height:6px;overflow:hidden;">
+        <div id="uploadBar" style="background:var(--green);height:100%;width:0%;transition:width .3s;border-radius:4px;"></div>
+      </div>
     </div>
+
+    <!-- URL VEYA DOSYA ADI -->
+    <div class="menu-field" style="margin-top:8px;">
+      <div class="field-label">Menü URL (otomatik dolar veya elle gir)</div>
+      <input class="field-input" id="pushMenuUrl" placeholder="Dosya yükle veya URL yapıştır">
+    </div>
+    <div class="menu-field" style="margin-top:8px;">
+      <div class="field-label">Menü Adı</div>
+      <input class="field-input" id="pushScreenName" placeholder="Örn: Pasta & Salat Menüsü">
+    </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('pushMenuModal')">İptal</button>
-      <button class="btn btn-primary" onclick="confirmPush()">📤 Gönder</button>
+      <button class="btn btn-primary" id="pushSendBtn" onclick="confirmPush()">📤 Gönder</button>
     </div>
   </div>
 </div>
@@ -847,6 +876,102 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 window.showToast = showToast;
+
+// ── CLOUDINARY UPLOAD ──
+const CLOUD_NAME = 'dovyxuyhe';
+const UPLOAD_PRESET = 'ml_default';
+
+window.handleDrop = function(e) {
+  e.preventDefault();
+  const dz = document.getElementById('dropZone');
+  dz.style.borderColor = 'var(--dim)';
+  dz.style.background = 'var(--s2)';
+  const file = e.dataTransfer.files[0];
+  if (file) uploadToCloudinary(file);
+}
+
+window.handleFileSelect = function(file) {
+  if (file) uploadToCloudinary(file);
+}
+
+async function uploadToCloudinary(file) {
+  const prog = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadBar');
+  const pct = document.getElementById('uploadPercent');
+  const icon = document.getElementById('dropIcon');
+  const txt = document.getElementById('dropText');
+  const sendBtn = document.getElementById('pushSendBtn');
+
+  // UI güncelle
+  prog.style.display = 'block';
+  icon.textContent = '⏳';
+  txt.textContent = file.name;
+  sendBtn.disabled = true;
+  sendBtn.textContent = '⏳ Yükleniyor...';
+
+  // Dosya türüne göre resource_type belirle
+  let resourceType = 'auto';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('resource_type', resourceType);
+
+  try {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        bar.style.width = percent + '%';
+        pct.textContent = percent + '%';
+      }
+    };
+
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        const url = res.secure_url;
+
+        // Video ise video wrapper URL oluştur
+        let finalUrl = url;
+        if (file.type.startsWith('video/')) {
+          // Video dosyasını direkt iframe'de oynatmak için wrapper
+          finalUrl = url;
+        }
+
+        document.getElementById('pushMenuUrl').value = finalUrl;
+        document.getElementById('pushScreenName').value = file.name.replace(/\.[^.]+$/, '');
+
+        icon.textContent = '✅';
+        txt.textContent = 'Yüklendi: ' + file.name;
+        sendBtn.disabled = false;
+        sendBtn.textContent = '📤 Gönder';
+        showToast('✓ Dosya yüklendi', 'success');
+      } else {
+        throw new Error('Yükleme başarısız: ' + xhr.status);
+      }
+    };
+
+    xhr.onerror = function() {
+      icon.textContent = '❌';
+      txt.textContent = 'Hata! Tekrar dene.';
+      sendBtn.disabled = false;
+      sendBtn.textContent = '📤 Gönder';
+      showToast('⚠️ Yükleme başarısız', 'error');
+    };
+
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`);
+    xhr.send(formData);
+
+  } catch(err) {
+    icon.textContent = '❌';
+    txt.textContent = 'Hata: ' + err.message;
+    sendBtn.disabled = false;
+    sendBtn.textContent = '📤 Gönder';
+    showToast('⚠️ ' + err.message, 'error');
+  }
+}
 
 // ── INIT ──
 await initDemo();
