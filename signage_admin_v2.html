@@ -1824,8 +1824,10 @@ window.confirmPush = async function() {
   const { shopId, screenId } = pushTargetScreenId;
 
   if (currentPushTab === 'slide') {
-    // SLAYT MODU
-    var validUrls = slideItems.map(function(i) { return i.url.trim(); }).filter(function(u) { return u; });
+    // SLAYT MODU - URL'leri DOM'dan oku
+    var inputs = document.querySelectorAll('#slideList input');
+    var validUrls = [];
+    inputs.forEach(function(inp) { if (inp.value.trim()) validUrls.push(inp.value.trim()); });
     if (validUrls.length < 2) { showToast('En az 2 video ekleyin', 'error'); return; }
     var name = document.getElementById('slideShowName').value.trim() || 'Slayt Gösterisi';
     await update(ref(db, 'screens/' + shopId + '/' + screenId), {
