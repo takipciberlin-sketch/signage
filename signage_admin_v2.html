@@ -651,6 +651,100 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
   </div>
 </div>
 
+<!-- TICKER (ALT BANT) MODAL -->
+<div class="modal-overlay" id="tickerModal">
+  <div class="modal" style="width:640px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:6px;">
+      <div>
+        <div class="modal-title">📢 Alt Bant Ayarları</div>
+        <div class="modal-sub" id="tickerModalSub">Hava durumu + kayan yazı</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Aktif</span>
+        <div id="tickerToggle" onclick="toggleTicker()" style="
+          width:42px;height:22px;border-radius:11px;
+          background:var(--dim);
+          position:relative;transition:background .2s;
+        ">
+          <div id="tickerToggleHandle" style="
+            position:absolute;top:2px;left:2px;
+            width:18px;height:18px;border-radius:50%;
+            background:#fff;transition:left .2s;
+          "></div>
+        </div>
+      </label>
+    </div>
+
+    <!-- HAVA DURUMU -->
+    <div style="background:rgba(64,196,255,0.05);border:1px solid rgba(64,196,255,0.2);border-radius:10px;padding:14px;margin-top:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">🌤️</span>
+        <span style="font-size:13px;font-weight:700;color:var(--blue);">Hava Durumu</span>
+        <label style="margin-left:auto;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" id="tickerWeatherEnabled" checked style="cursor:pointer;">
+          <span style="font-size:12px;color:var(--text2);">Göster</span>
+        </label>
+      </div>
+      <input type="text" id="tickerCity" placeholder="Şehir (örn: Berlin)" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;">
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">Hava durumu otomatik gelir, API key gerekmez</div>
+    </div>
+
+    <!-- KAYAN YAZI -->
+    <div style="background:rgba(255,193,7,0.05);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:14px;margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">📢</span>
+        <span style="font-size:13px;font-weight:700;color:#ffc107;">Kayan Yazılar</span>
+      </div>
+      <div id="tickerMessageList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+      <button onclick="addTickerMessage()" style="width:100%;padding:10px;border-radius:6px;border:1px dashed var(--dim);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='#ffc107';this.style.color='#ffc107'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--text2)'">
+        + Yeni Yazı Ekle
+      </button>
+    </div>
+
+    <!-- AYARLAR -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div>
+        <div class="field-label">Renk</div>
+        <select id="tickerColor" class="field-input" style="margin-top:6px;">
+          <option value="#FFD700">🟡 Sarı</option>
+          <option value="#FF5252">🔴 Kırmızı</option>
+          <option value="#00E676">🟢 Yeşil</option>
+          <option value="#FFFFFF">⚪ Beyaz</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">Hız</div>
+        <select id="tickerSpeed" class="field-input" style="margin-top:6px;">
+          <option value="90">🐢 Çok Yavaş</option>
+          <option value="60" selected>🚶 Yavaş</option>
+          <option value="30">🏃 Normal</option>
+          <option value="15">⚡ Hızlı</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ÖNİZLEME -->
+    <div style="margin-top:16px;padding:12px;background:#000;border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;letter-spacing:1px;">ÖNİZLEME</div>
+      <div id="tickerPreview" style="height:50px;background:linear-gradient(90deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));border-top:2px solid #00e676;display:flex;align-items:center;overflow:hidden;border-radius:4px;">
+        <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 14px;height:100%;background:rgba(0,230,118,0.1);border-right:2px solid rgba(0,230,118,0.3);color:#fff;font-weight:600;font-size:14px;">
+          <span style="font-size:20px;">🌤️</span>
+          <div>
+            <div style="font-size:16px;font-weight:800;color:#00e676;line-height:1;">12°</div>
+            <div style="font-size:10px;color:#b0bec5;">Berlin</div>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding-left:14px;white-space:nowrap;font-size:16px;font-weight:700;" id="tickerPreviewText">Hoş Geldiniz</div>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('tickerModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveTickerSettings()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove, serverTimestamp }
@@ -1099,6 +1193,7 @@ function renderScreenCard(sid, screen, shopId) {
     <div class="screen-actions">
       <button class="screen-btn push" onclick="openPush('${shopId}','${sid}')">📤 Menü</button>
       <button class="screen-btn restart" onclick="openScheduleModal('${shopId}','${sid}')" style="background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.2);">⏰ Zaman</button>
+      <button class="screen-btn restart" onclick="openTickerModal('${shopId}','${sid}')" style="background:rgba(255,193,7,0.1);color:#ffc107;border:1px solid rgba(255,193,7,0.2);">📢 Bant</button>
       <button class="screen-btn restart" onclick="pingScreen('${shopId}','${sid}')">🔄</button>
     </div>
   </div>`;
@@ -1524,6 +1619,115 @@ window.saveScreenSchedule = async function() {
   await update(ref(db, `screens/${shopId}/${screenId}`), data);
   closeModal('scheduleModal');
   showToast(`💾 Zaman ayarları kaydedildi · ${scheduleEnabledTemp ? 'AKTİF' : 'kapalı'}`, 'success');
+}
+
+// ── ALT BANT (TICKER) ──
+var activeTickerScreen = null;
+var tickerEnabledTemp = false;
+var tickerMessages = [];
+
+window.openTickerModal = function(shopId, screenId) {
+  activeTickerScreen = { shopId, screenId };
+  var screen = screens[shopId]?.[screenId];
+  document.getElementById('tickerModalSub').textContent = (screen?.name || screenId) + ' için alt bant ayarı';
+  
+  // Mevcut ayarları yükle
+  tickerEnabledTemp = screen?.tickerEnabled || false;
+  tickerMessages = screen?.tickerMessages || [];
+  if (typeof tickerMessages === 'string') tickerMessages = [tickerMessages];
+  
+  document.getElementById('tickerCity').value = screen?.tickerCity || 'Berlin';
+  document.getElementById('tickerColor').value = screen?.tickerColor || '#FFD700';
+  document.getElementById('tickerSpeed').value = screen?.tickerSpeed || 60;
+  document.getElementById('tickerWeatherEnabled').checked = screen?.weatherEnabled !== false;
+  
+  updateTickerToggleUI();
+  renderTickerMessages();
+  updateTickerPreview();
+  
+  document.getElementById('tickerModal').classList.add('open');
+}
+
+window.toggleTicker = function() {
+  tickerEnabledTemp = !tickerEnabledTemp;
+  updateTickerToggleUI();
+}
+
+function updateTickerToggleUI() {
+  var toggle = document.getElementById('tickerToggle');
+  var handle = document.getElementById('tickerToggleHandle');
+  if (tickerEnabledTemp) {
+    toggle.style.background = '#ffc107';
+    handle.style.left = '22px';
+  } else {
+    toggle.style.background = 'var(--dim)';
+    handle.style.left = '2px';
+  }
+}
+
+window.addTickerMessage = function() {
+  tickerMessages.push('');
+  renderTickerMessages();
+}
+
+window.removeTickerMessage = function(idx) {
+  tickerMessages.splice(idx, 1);
+  renderTickerMessages();
+  updateTickerPreview();
+}
+
+function renderTickerMessages() {
+  var list = document.getElementById('tickerMessageList');
+  if (!list) return;
+  if (tickerMessages.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text2);text-align:center;padding:10px;">Henüz yazı yok. + ile yeni ekle</div>';
+    return;
+  }
+  list.innerHTML = tickerMessages.map(function(msg, i) {
+    var safe = (msg || '').replace(/"/g, '&quot;');
+    return '<div style="display:flex;gap:8px;align-items:center;background:var(--s2);border-radius:6px;padding:8px;">' +
+      '<span style="color:#ffc107;font-size:12px;font-weight:700;min-width:18px;">' + (i+1) + '</span>' +
+      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safe + '" style="flex:1;" oninput="tickerMessages[' + i + ']=this.value;updateTickerPreview()">' +
+      '<button onclick="removeTickerMessage(' + i + ')" style="padding:6px 8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:4px;font-size:12px;cursor:pointer;">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+window.updateTickerPreview = function() {
+  var preview = document.getElementById('tickerPreviewText');
+  if (!preview) return;
+  var color = document.getElementById('tickerColor').value;
+  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
+  if (msgs.length === 0) msgs = ['Hoş Geldiniz'];
+  preview.style.color = color;
+  preview.textContent = msgs.join(' • ') + ' • ' + msgs.join(' • ');
+}
+
+// Renk değişince önizleme güncelle
+document.addEventListener('change', function(e) {
+  if (e.target && (e.target.id === 'tickerColor' || e.target.id === 'tickerSpeed')) {
+    updateTickerPreview();
+  }
+});
+
+window.saveTickerSettings = async function() {
+  if (!activeTickerScreen) return;
+  var { shopId, screenId } = activeTickerScreen;
+  
+  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
+  
+  var data = {
+    tickerEnabled: tickerEnabledTemp,
+    tickerCity: document.getElementById('tickerCity').value.trim() || 'Berlin',
+    tickerColor: document.getElementById('tickerColor').value,
+    tickerSpeed: parseInt(document.getElementById('tickerSpeed').value),
+    tickerMessages: msgs.length > 0 ? msgs : ['Hoş Geldiniz'],
+    weatherEnabled: document.getElementById('tickerWeatherEnabled').checked
+  };
+  
+  await update(ref(db, 'screens/' + shopId + '/' + screenId), data);
+  closeModal('tickerModal');
+  showToast('💾 Alt bant ayarları kaydedildi · ' + (tickerEnabledTemp ? 'AKTİF' : 'kapalı'), 'success');
 }
 
 window.uploadScreenScheduleMenu = function(slot) {

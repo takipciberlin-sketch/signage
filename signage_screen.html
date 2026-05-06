@@ -59,6 +59,44 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 
 @keyframes spin { to { transform:rotate(360deg); } }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ── ALT BANT (TICKER) ── */
+#tickerBar {
+  position:fixed; bottom:0; left:0; right:0;
+  height:60px; display:none;
+  background:linear-gradient(90deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
+  border-top:2px solid #00e676;
+  z-index:9998;
+  align-items:center;
+  font-family:'Inter', sans-serif;
+}
+#tickerWeather {
+  flex-shrink:0;
+  display:flex; align-items:center; gap:10px;
+  padding:0 20px; height:100%;
+  background:rgba(0,230,118,0.1);
+  border-right:2px solid rgba(0,230,118,0.3);
+  color:#fff; font-weight:600; font-size:18px;
+  white-space:nowrap;
+}
+#tickerWeather .icon { font-size:28px; }
+#tickerWeather .temp { font-size:22px; font-weight:800; color:#00e676; }
+#tickerWeather .city { font-size:13px; color:#b0bec5; font-weight:500; }
+#tickerScroll {
+  flex:1; overflow:hidden; position:relative; height:100%;
+  display:flex; align-items:center;
+}
+#tickerScroll .scroll-content {
+  display:inline-block; white-space:nowrap;
+  font-size:24px; font-weight:700;
+  animation:tickerScroll 60s linear infinite;
+  padding-left:100%;
+}
+.scroll-content span { padding:0 40px; }
+@keyframes tickerScroll {
+  0%   { transform:translateX(0); }
+  100% { transform:translateX(-100%); }
+}
 </style>
 </head>
 <body>
@@ -90,12 +128,28 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 </div>
 
 <iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
-<img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;">
-<video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;"></video>
+<img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;z-index:1;">
+<video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;z-index:1;"></video>
 
 <div id="statusBar">
   <div id="statusDot"></div>
   <span id="statusText">bağlanıyor...</span>
+</div>
+
+<!-- ALT BANT (TICKER) -->
+<div id="tickerBar">
+  <div id="tickerWeather">
+    <span class="icon" id="weatherIcon">🌤️</span>
+    <div>
+      <div class="temp" id="weatherTemp">--°</div>
+      <div class="city" id="weatherCity">--</div>
+    </div>
+  </div>
+  <div id="tickerScroll">
+    <div class="scroll-content" id="tickerContent">
+      <span>Hoş Geldiniz</span>
+    </div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -163,6 +217,9 @@ function startListening() {
 
     localStorage.setItem('sgs_lastData', JSON.stringify(data));
     document.getElementById('statusText').textContent = 'bağlı';
+
+    // ALT BANT (TICKER) güncelle
+    updateTicker(data);
 
     var url = data.menuUrl || '';
     if (data.scheduleEnabled) {
@@ -346,7 +403,87 @@ function getScheduledUrl(data) {
   return null;
 }
 
-// ── SLAYT GÖSTERİSİ ──
+// ── ALT BANT (TICKER) ──
+var lastTickerKey = '';
+var weatherFetched = false;
+var weatherCity = '';
+
+function updateTicker(data) {
+  var bar = document.getElementById('tickerBar');
+  
+  if (!data.tickerEnabled) {
+    bar.style.display = 'none';
+    return;
+  }
+  
+  bar.style.display = 'flex';
+  
+  // Hız ayarı
+  var speed = data.tickerSpeed || 60;
+  var content = document.getElementById('tickerContent');
+  content.style.animationDuration = speed + 's';
+  
+  // Renk
+  var color = data.tickerColor || '#FFD700';
+  content.style.color = color;
+  
+  // Yazıları birleştir
+  var msgs = data.tickerMessages || [];
+  if (typeof msgs === 'string') msgs = [msgs];
+  if (msgs.length === 0) msgs = ['Hoş Geldiniz'];
+  
+  var newKey = JSON.stringify(msgs) + speed + color;
+  if (newKey !== lastTickerKey) {
+    lastTickerKey = newKey;
+    // Yazıları • ile birleştir, 3 kez tekrar et (akıcı görünüm için)
+    var combined = msgs.map(function(m) { return '<span>' + m + ' • </span>'; }).join('');
+    content.innerHTML = combined + combined + combined;
+  }
+  
+  // Hava durumu
+  var showWeather = data.weatherEnabled !== false; // default true
+  var weatherEl = document.getElementById('tickerWeather');
+  
+  if (showWeather && data.tickerCity) {
+    weatherEl.style.display = 'flex';
+    if (data.tickerCity !== weatherCity) {
+      weatherCity = data.tickerCity;
+      fetchWeather(data.tickerCity);
+    }
+  } else {
+    weatherEl.style.display = 'none';
+  }
+}
+
+function fetchWeather(city) {
+  document.getElementById('weatherCity').textContent = city;
+  
+  // wttr.in - Ücretsiz, API key gerektirmez
+  fetch('https://wttr.in/' + encodeURIComponent(city) + '?format=j1')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var cur = d.current_condition[0];
+      var temp = cur.temp_C;
+      var desc = cur.weatherDesc[0].value.toLowerCase();
+      var icon = '🌤️';
+      if (desc.indexOf('clear') >= 0 || desc.indexOf('sunny') >= 0) icon = '☀️';
+      else if (desc.indexOf('cloud') >= 0) icon = '☁️';
+      else if (desc.indexOf('rain') >= 0) icon = '🌧️';
+      else if (desc.indexOf('snow') >= 0) icon = '❄️';
+      else if (desc.indexOf('storm') >= 0 || desc.indexOf('thunder') >= 0) icon = '⛈️';
+      else if (desc.indexOf('fog') >= 0 || desc.indexOf('mist') >= 0) icon = '🌫️';
+      
+      document.getElementById('weatherIcon').textContent = icon;
+      document.getElementById('weatherTemp').textContent = temp + '°';
+      
+      // 30 dakikada bir güncelle
+      setTimeout(function() { fetchWeather(city); }, 30 * 60 * 1000);
+    })
+    .catch(function(e) {
+      console.warn('[Hava] Hata:', e);
+      document.getElementById('weatherTemp').textContent = '--°';
+    });
+}
 
 function sendPing() {
   if (!shopId || !screenId) return;
