@@ -1624,7 +1624,7 @@ window.saveScreenSchedule = async function() {
 // ── ALT BANT (TICKER) ──
 var activeTickerScreen = null;
 var tickerEnabledTemp = false;
-var tickerMessages = [];
+window.tickerMessages = [];
 
 window.openTickerModal = function(shopId, screenId) {
   activeTickerScreen = { shopId, screenId };
@@ -1687,7 +1687,7 @@ function renderTickerMessages() {
     var safe = (msg || '').replace(/"/g, '&quot;');
     return '<div style="display:flex;gap:8px;align-items:center;background:var(--s2);border-radius:6px;padding:8px;">' +
       '<span style="color:#ffc107;font-size:12px;font-weight:700;min-width:18px;">' + (i+1) + '</span>' +
-      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safe + '" style="flex:1;" oninput="tickerMessages[' + i + ']=this.value;updateTickerPreview()">' +
+      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safe + '" style="flex:1;" oninput="window.tickerMessages[' + i + ']=this.value;window.updateTickerPreview()">' +
       '<button onclick="removeTickerMessage(' + i + ')" style="padding:6px 8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:4px;font-size:12px;cursor:pointer;">✕</button>' +
     '</div>';
   }).join('');
