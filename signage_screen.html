@@ -346,6 +346,8 @@ function getScheduledUrl(data) {
   return null;
 }
 
+// ── SLAYT GÖSTERİSİ ──
+
 function sendPing() {
   if (!shopId || !screenId) return;
   fdb.ref('screens/' + shopId + '/' + screenId).update({ lastSeen: Date.now(), online: true });

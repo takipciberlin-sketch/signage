@@ -522,17 +522,11 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
 
 <!-- PUSH MENU MODAL -->
 <div class="modal-overlay" id="pushMenuModal">
-  <div class="modal" style="width:580px;max-height:90vh;overflow-y:auto;">
+  <div class="modal" style="width:560px;">
     <div class="modal-title">📤 Menü Gönder</div>
     <div class="modal-sub" id="pushModalSub">Ekrana menü gönderilecek</div>
 
-    <!-- SEKME BUTONLARI -->
-    <div style="display:flex;gap:8px;margin:16px 0 0 0;">
-      <button id="tabSingle" onclick="switchPushTab('single')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--green);background:rgba(0,230,118,0.1);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;">🎬 Tek Menü</button>
-      <button id="tabSlide" onclick="switchPushTab('slide')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--dim);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;">🎞️ Slayt Gösterisi</button>
-    </div>
-
-    <!-- TEK MENÜ SEKMESİ -->
+    <!-- TEK MENÜ -->
     <div id="tabSingleContent">
       <div id="dropZone" style="
         border:2px dashed var(--dim); border-radius:12px;
@@ -566,20 +560,7 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       </div>
     </div>
 
-    <!-- SLAYT GÖSTERİSİ SEKMESİ -->
-    <div id="tabSlideContent" style="display:none;">
-      <div style="margin:16px 0 10px 0;font-size:12px;color:var(--text2);">
-        Videolar bittikçe sıradakine geçer. Sınırsız video ekleyebilirsiniz.
-      </div>
-      <div id="slideList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-      <button onclick="addSlideItem()" style="width:100%;padding:12px;border-radius:8px;border:1px dashed var(--dim);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--text2)'">
-        + Video Ekle
-      </button>
-      <div style="margin-top:12px;">
-        <div class="field-label">Slayt Adı</div>
-        <input class="field-input" id="slideShowName" placeholder="Örn: Ana Menü Slaytı" style="margin-top:6px;">
-      </div>
-    </div>
+
 
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeModal('pushMenuModal')">İptal</button>
@@ -1719,171 +1700,27 @@ window.addShop = async function() {
 }
 
 // ── PUSH MENU ──
-// ── SLAYT GÖSTERİSİ ──
-var slideItems = [];
-var currentPushTab = 'single';
-
-window.switchPushTab = function(tab) {
-  currentPushTab = tab;
-  var single = document.getElementById('tabSingleContent');
-  var slide  = document.getElementById('tabSlideContent');
-  var btnS   = document.getElementById('tabSingle');
-  var btnSl  = document.getElementById('tabSlide');
-
-  if (tab === 'single') {
-    single.style.display = 'block';
-    slide.style.display  = 'none';
-    btnS.style.borderColor  = 'var(--green)';
-    btnS.style.background   = 'rgba(0,230,118,0.1)';
-    btnS.style.color        = 'var(--green)';
-    btnSl.style.borderColor = 'var(--dim)';
-    btnSl.style.background  = 'transparent';
-    btnSl.style.color       = 'var(--text2)';
-    document.getElementById('pushSendBtn').textContent = '📤 Gönder';
-  } else {
-    single.style.display = 'none';
-    slide.style.display  = 'block';
-    btnSl.style.borderColor = 'var(--green)';
-    btnSl.style.background  = 'rgba(0,230,118,0.1)';
-    btnSl.style.color       = 'var(--green)';
-    btnS.style.borderColor  = 'var(--dim)';
-    btnS.style.background   = 'transparent';
-    btnS.style.color        = 'var(--text2)';
-    document.getElementById('pushSendBtn').textContent = '🎞️ Slayt Gönder';
-    renderSlideList();
-  }
-}
-
-window.addSlideItem = function() {
-  slideItems.push({ url: '', uploading: false });
-  renderSlideList();
-}
-
-window.removeSlideItem = function(idx) {
-  slideItems.splice(idx, 1);
-  renderSlideList();
-}
-
-window.renderSlideList = function() {
-  var list = document.getElementById('slideList');
-  if (!list) return;
-  list.innerHTML = slideItems.map(function(item, i) {
-    return '<div style="display:flex;gap:8px;align-items:center;background:var(--s2);border-radius:8px;padding:10px;">' +
-      '<div style="color:var(--text2);font-size:12px;font-weight:700;min-width:20px;">' + (i+1) + '</div>' +
-      '<input class="field-input slide-url-input" placeholder="MP4 URL" value="' + (item.url || '') + '" style="flex:1;">' +
-      '<button class="slide-upload-btn" onclick="uploadSlideItem(' + i + ')" style="padding:8px 12px;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">📤 Yükle</button>' +
-      '<button onclick="removeSlideItem(' + i + ')" style="padding:8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:6px;font-size:13px;cursor:pointer;">✕</button>' +
-    '</div>';
-  }).join('');
-}
-
-window.uploadSlideItem = async function(idx) {
-  var fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'video/*,image/*';
-  fileInput.onchange = async function() {
-    var file = fileInput.files[0];
-    if (!file) return;
-    
-    // Butonu yükleniyor yap
-    var allBtns = document.querySelectorAll('#slideList .slide-upload-btn');
-    var btn = allBtns[idx];
-    if (btn) { btn.textContent = '⏳ 0%'; btn.disabled = true; }
-
-    try {
-      // Cloudinary'ye XHR ile yükle
-      var formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', UPLOAD_PRESET);
-
-      var url = await new Promise(function(resolve, reject) {
-        var xhr = new XMLHttpRequest();
-        xhr.upload.onprogress = function(e) {
-          if (e.lengthComputable && btn) {
-            var pct = Math.round((e.loaded / e.total) * 100);
-            btn.textContent = '⏳ ' + pct + '%';
-          }
-        };
-        xhr.onload = function() {
-          if (xhr.status === 200) {
-            var res = JSON.parse(xhr.responseText);
-            resolve(res.secure_url);
-          } else {
-            reject(new Error('Hata: ' + xhr.status));
-          }
-        };
-        xhr.onerror = function() { reject(new Error('Bağlantı hatası')); };
-        xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/auto/upload');
-        xhr.send(formData);
-      });
-
-      // URL'yi input kutusuna yaz
-      var allInputs = document.querySelectorAll('#slideList .slide-url-input');
-      if (allInputs[idx]) allInputs[idx].value = url;
-      
-      if (btn) { btn.textContent = '✅ Yüklendi'; btn.disabled = false; }
-      showToast('✅ Video ' + (idx+1) + ' yüklendi!', 'success');
-
-    } catch(e) {
-      if (btn) { btn.textContent = '📤 Yükle'; btn.disabled = false; }
-      showToast('Yükleme hatası: ' + e.message, 'error');
-    }
-  };
-  fileInput.click();
-}
-
 window.openPush = function(shopId, screenId) {
   pushTargetScreenId = { shopId, screenId };
   const screen = screens[shopId]?.[screenId];
   document.getElementById('pushModalSub').textContent = `Hedef: ${screen?.name || screenId}`;
   document.getElementById('pushMenuUrl').value = screen?.menuUrl || '';
   document.getElementById('pushScreenName').value = screen?.name || '';
-  slideItems = [];
-  // Mevcut slayt varsa yükle
-  if (screen?.slideUrls && Array.isArray(screen.slideUrls)) {
-    slideItems = screen.slideUrls.map(function(u) { return { url: u, uploading: false }; });
-    switchPushTab('slide');
-    document.getElementById('slideShowName').value = screen?.menuName || '';
-  } else {
-    switchPushTab('single');
-  }
   document.getElementById('pushMenuModal').classList.add('open');
 }
 
 window.confirmPush = async function() {
+  const url  = document.getElementById('pushMenuUrl').value.trim();
+  const name = document.getElementById('pushScreenName').value.trim();
+  if (!url) { showToast('URL boş olamaz', 'error'); return; }
   const { shopId, screenId } = pushTargetScreenId;
-
-  if (currentPushTab === 'slide') {
-    // SLAYT MODU - URL'leri DOM'dan oku
-    var inputs = document.querySelectorAll('#slideList input');
-    var validUrls = [];
-    inputs.forEach(function(inp) { if (inp.value.trim()) validUrls.push(inp.value.trim()); });
-    if (validUrls.length < 2) { showToast('En az 2 video ekleyin', 'error'); return; }
-    var name = document.getElementById('slideShowName').value.trim() || 'Slayt Gösterisi';
-    await update(ref(db, 'screens/' + shopId + '/' + screenId), {
-      menuUrl: validUrls[0],
-      slideUrls: validUrls,
-      slideMode: true,
-      menuName: name,
-      updatedAt: Date.now()
-    });
-    closeModal('pushMenuModal');
-    showToast('🎞️ Slayt gönderildi (' + validUrls.length + ' video)', 'success');
-  } else {
-    // TEK MENÜ MODU
-    const url  = document.getElementById('pushMenuUrl').value.trim();
-    const name = document.getElementById('pushScreenName').value.trim();
-    if (!url) { showToast('URL boş olamaz', 'error'); return; }
-    await update(ref(db, 'screens/' + shopId + '/' + screenId), {
-      menuUrl: url,
-      slideUrls: null,
-      slideMode: false,
-      menuName: name || 'Menü',
-      updatedAt: Date.now()
-    });
-    closeModal('pushMenuModal');
-    showToast('✓ Menü gönderildi', 'success');
-  }
+  await update(ref(db, `screens/${shopId}/${screenId}`), {
+    menuUrl: url,
+    menuName: name || 'Menü',
+    updatedAt: Date.now()
+  });
+  closeModal('pushMenuModal');
+  showToast('✓ Menü gönderildi', 'success');
 }
 
 window.pushToAll = function(shopId) {
