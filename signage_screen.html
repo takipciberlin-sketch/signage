@@ -127,8 +127,8 @@ html, body {
 
 <!-- STATUS BAR -->
 <div id="statusBar">
-  <div class="status-dot-sm" id="statusDot"></div>
-  <span id="statusText">bağlantı kuruluyor...</span>
+  <div class="status-dot-sm"></div>
+  <span id="statusText">bağlı</span>
 </div>
 
 <script type="module">
@@ -153,7 +153,6 @@ let shopId   = localStorage.getItem('sgs_shopId');
 let screenId = localStorage.getItem('sgs_screenId');
 let currentUrl = '';
 let pingInterval = null;
-let screenListener = null;
 
 // ── Kaydedilmiş ID varsa direkt başlat ──
 if (shopId && screenId) {
@@ -163,24 +162,12 @@ if (shopId && screenId) {
 
 // ── Kurulum butonu ──
 window.startScreen = function() {
-  const inputShop = document.getElementById('inputShopId').value.trim();
-  const inputScreen = document.getElementById('inputScreenId').value.trim();
-  
-  if (!inputShop || !inputScreen) { 
-    alert('Lütfen her iki alanı da doldurun'); 
-    return; 
-  }
-  
-  shopId = inputShop;
-  screenId = inputScreen;
-  
+  shopId   = document.getElementById('inputShopId').value.trim();
+  screenId = document.getElementById('inputScreenId').value.trim();
+  if (!shopId || !screenId) { alert('Lütfen her iki alanı da doldurun'); return; }
   localStorage.setItem('sgs_shopId', shopId);
   localStorage.setItem('sgs_screenId', screenId);
-  
   document.getElementById('setupScreen').style.display = 'none';
-  
-  console.log('[SignageOS] Başlatılıyor:', shopId, screenId);
-  
   startListening();
 }
 
@@ -188,12 +175,13 @@ function startListening() {
   // Bekleme ekranını göster
   document.getElementById('waitScreen').style.display = 'flex';
   document.getElementById('waitId').textContent = `${shopId} · ${screenId}`;
-  document.getElementById('statusText').textContent = 'bağlanıyor...';
 
-  // Ekranı dinle
+  // Sadece ekranı dinle (artık dükkân ayarına gerek yok)
   const screenRef = ref(db, `screens/${shopId}/${screenId}`);
 
   let currentScreenData = null;
+
+  let screenListener = null;
 
   screenListener = onValue(screenRef, snap => {
     currentScreenData = snap.val();
@@ -201,9 +189,20 @@ function startListening() {
     console.log('[Firebase] Ekran verisi:', currentScreenData);
     
     if (!currentScreenData) {
-      document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. Admin panelinden ekran oluşturun.';
+      document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. ID\'leri kontrol edin.';
       document.getElementById('statusText').textContent = 'ekran bulunamadı';
       return;
+    }
+    
+    // ── ADMIN'DEN MANUEL RESTART KONTROLÜ ──
+    if (currentScreenData.restartRequest) {
+      const lastRestart = parseInt(localStorage.getItem('sgs_lastRestart') || '0');
+      if (currentScreenData.restartRequest > lastRestart) {
+        console.log('[Manual] Admin restart komutu alındı:', currentScreenData.restartRequest);
+        localStorage.setItem('sgs_lastRestart', currentScreenData.restartRequest.toString());
+        performFullRestart();
+        return;
+      }
     }
     
     // Son durumu localStorage'a kaydet (offline için)
@@ -221,10 +220,9 @@ function startListening() {
       console.log('[Offline] Son kaydedilen veri kullanılıyor');
       document.getElementById('waitStatus').textContent = 'Offline mod - Son menü gösteriliyor';
       document.getElementById('statusText').textContent = 'offline - cache';
-      updateOnlineStatus(false);
       decideAndLoad();
     } else {
-      document.getElementById('waitStatus').textContent = 'Firebase bağlantı hatası: ' + error.message;
+      document.getElementById('waitStatus').textContent = 'Bağlantı hatası';
       document.getElementById('statusText').textContent = 'hata';
     }
   });
@@ -255,7 +253,6 @@ function startListening() {
       document.getElementById('menuFrame').style.display = 'none';
       document.getElementById('menuImage').style.display = 'none';
       document.getElementById('menuVideo').style.display = 'none';
-      document.getElementById('waitStatus').textContent = 'Admin panelinden menü URL\'si atanmasını bekliyor';
     }
   }
 
@@ -265,6 +262,118 @@ function startListening() {
   // Her 30 saniyede ping at (online durumu için)
   sendPing();
   pingInterval = setInterval(sendPing, 30000);
+
+  // ── OTOMATİK GECE RESTART (03:00) ──
+  startAutoRestart();
+}
+
+// ── OTOMATİK YENİDEN BAŞLATMA SİSTEMİ ──
+function startAutoRestart() {
+  // Her dakika kontrol et: saat 03:00 mı?
+  setInterval(() => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // Saat 03:00'te tam restart yap
+    if (hours === 3 && minutes === 0) {
+      console.log('[AutoRestart] Gece 03:00 - Tam restart başlatılıyor...');
+      performFullRestart();
+    }
+  }, 60000); // Her 60 saniyede bir kontrol
+  
+  console.log('[AutoRestart] Otomatik gece restart aktif - 03:00\'te tam restart');
+}
+
+async function performFullRestart() {
+  try {
+    console.log('[AutoRestart] 1/4 - Restart bildirimi gösteriliyor...');
+    showRestartScreen();
+    
+    // Firebase'e restart bildirimi gönder
+    if (shopId && screenId) {
+      try {
+        await update(ref(db, `screens/${shopId}/${screenId}`), {
+          lastRestart: Date.now(),
+          restartReason: 'scheduled_03:00'
+        });
+      } catch(e) { console.log('[AutoRestart] Firebase ping hatası:', e); }
+    }
+    
+    console.log('[AutoRestart] 2/4 - IndexedDB temizleniyor...');
+    // IndexedDB cache'i temizle (eski medyalar silinir, yenileri tekrar indirilir)
+    try {
+      if (cacheDB) {
+        const transaction = cacheDB.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        await new Promise((resolve, reject) => {
+          const req = store.clear();
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+        console.log('[AutoRestart] IndexedDB temizlendi');
+      }
+    } catch(e) { console.log('[AutoRestart] IndexedDB temizlik hatası:', e); }
+    
+    console.log('[AutoRestart] 3/4 - Service Worker cache temizleniyor...');
+    // Service Worker cache'i temizle (varsa)
+    try {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('[AutoRestart] Service Worker cache temizlendi');
+      }
+    } catch(e) { console.log('[AutoRestart] Cache temizlik hatası:', e); }
+    
+    console.log('[AutoRestart] 4/4 - 5 saniye sonra tam yeniden başlatılıyor...');
+    
+    // 5 saniye bekle, sonra hard refresh (cache bypass)
+    setTimeout(() => {
+      // location.reload(true) eski yöntem, yeni yöntem URL'e timestamp ekle
+      const url = new URL(window.location.href);
+      url.searchParams.set('_restart', Date.now());
+      window.location.href = url.toString();
+    }, 5000);
+    
+  } catch(err) {
+    console.error('[AutoRestart] Restart hatası, basit reload yapılıyor:', err);
+    setTimeout(() => location.reload(), 2000);
+  }
+}
+
+function showRestartScreen() {
+  // Ekrana restart bildirimi göster
+  const overlay = document.createElement('div');
+  overlay.id = 'restartOverlay';
+  overlay.innerHTML = `
+    <div style="
+      position:fixed; inset:0; z-index:99999;
+      background:#080909; color:#e2e8f0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      font-family: sans-serif;
+    ">
+      <div style="font-size:24px; font-weight:800; margin-bottom:6px;">
+        Signage<span style="color:#00e676;">OS</span>
+      </div>
+      <div style="font-size:13px; color:#4a5568; margin-bottom:32px; letter-spacing:2px;">
+        OTOMATİK BAKIM
+      </div>
+      <div style="
+        width:50px; height:50px;
+        border:3px solid rgba(0,230,118,.2);
+        border-top-color:#00e676;
+        border-radius:50%;
+        animation:spin .8s linear infinite;
+        margin-bottom:24px;
+      "></div>
+      <div style="font-size:14px; color:#718096;">Sistem yenileniyor...</div>
+      <div style="font-size:12px; color:#4a5568; margin-top:8px;">
+        Bu işlem birkaç saniye sürer
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 // Saate göre hangi menüyü göstereceğini belirle (ekran objesi alır)
@@ -347,7 +456,7 @@ function loadMenu(url) {
 }
 
 // ── OFFLINE CACHE SİSTEMİ ──
-let cacheDB;
+let db;
 const DB_NAME = 'SignageCache';
 const STORE_NAME = 'media';
 
@@ -356,8 +465,8 @@ async function initDB() {
     const request = indexedDB.open(DB_NAME, 1);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
-      cacheDB = request.result;
-      resolve(cacheDB);
+      db = request.result;
+      resolve(db);
     };
     request.onupgradeneeded = (e) => {
       const database = e.target.result;
@@ -411,10 +520,10 @@ async function downloadAndCache(url, type) {
 }
 
 async function saveCachedMedia(url, blob, type) {
-  if (!cacheDB) await initDB();
+  if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
-    const transaction = cacheDB.transaction([STORE_NAME], 'readwrite');
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const request = store.put({ url, blob, type, cached: Date.now() });
     
@@ -424,10 +533,10 @@ async function saveCachedMedia(url, blob, type) {
 }
 
 async function getCachedMedia(url) {
-  if (!cacheDB) await initDB();
+  if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
-    const transaction = cacheDB.transaction([STORE_NAME], 'readonly');
+    const transaction = db.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
     const request = store.get(url);
     
@@ -444,12 +553,15 @@ async function getCachedMedia(url) {
 }
 
 function updateOnlineStatus(isOnline) {
+  const statusBar = document.getElementById('statusBar');
   const statusDot = document.getElementById('statusDot');
   
   if (isOnline) {
     statusDot.style.background = '#00e676';
+    statusBar.style.background = 'rgba(8,9,9,0.7)';
   } else {
     statusDot.style.background = '#ff5252';
+    statusBar.style.background = 'rgba(255,82,82,0.15)';
     document.getElementById('statusText').textContent = 'offline';
   }
 }
@@ -459,9 +571,7 @@ window.addEventListener('online', () => {
   updateOnlineStatus(true);
   document.getElementById('statusText').textContent = 'yayında';
   // İnternet geldi - Firebase'i tekrar dinle
-  if (shopId && screenId && !screenListener) {
-    startListening();
-  }
+  if (shopId && screenId) listenToScreen();
 });
 
 window.addEventListener('offline', () => {
@@ -479,7 +589,6 @@ async function sendPing() {
       online: true
     });
   } catch(e) {
-    console.error('[Ping] Hata:', e);
     document.getElementById('statusText').textContent = 'bağlantı yok';
   }
 }

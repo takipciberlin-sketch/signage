@@ -310,7 +310,6 @@ html,body { min-height:100vh; background:var(--bg); font-family:'Inter',sans-ser
 
 <script>
 const ADMIN_PASSWORD = "Musluk2000";  // Şifren burada
-
 let loginAttempts = 0;
 
 function checkLogin() {
@@ -328,9 +327,9 @@ function checkLogin() {
     // 3 hatalı denemeden sonra 5 saniye bekleme
     if (loginAttempts >= 3) {
       const btn = document.querySelector('#loginOverlay button');
-      const input = document.getElementById('loginPassword');
+      const inputEl = document.getElementById('loginPassword');
       btn.disabled = true;
-      input.disabled = true;
+      inputEl.disabled = true;
       btn.style.opacity = '0.5';
       let countdown = 5;
       err.textContent = `🔒 Çok fazla hatalı deneme! ${countdown} saniye bekleyin...`;
@@ -341,21 +340,19 @@ function checkLogin() {
         } else {
           clearInterval(timer);
           btn.disabled = false;
-          input.disabled = false;
+          inputEl.disabled = false;
           btn.style.opacity = '1';
           err.textContent = '';
           loginAttempts = 0;
-          input.focus();
+          inputEl.focus();
         }
       }, 1000);
     }
   }
 }
 
-// Sayfa açılır açılmaz şifre alanına focus
+// Her sayfa açılışında şifre sor (sessionStorage YOK)
 setTimeout(() => document.getElementById('loginPassword').focus(), 100);
-
-// Sayfa kapatılırken yenilense de tekrar şifre sorar (sessionStorage YOK)
 </script>
 
 <!-- TOPBAR -->
@@ -1745,10 +1742,31 @@ window.addScreen = async function(shopId) {
   showToast('✓ Ekran eklendi', 'success');
 }
 
-// ── PING ──
+// ── PING / RESTART ──
 window.pingScreen = async function(shopId, screenId) {
-  await update(ref(db, `screens/${shopId}/${screenId}`), { pingRequest: Date.now() });
-  showToast('🔄 Ping gönderildi', 'success');
+  if (!confirm('Bu ekran yeniden başlatılacak. Emin misin?\n\n(Ekran 5 saniye içinde restart olacak)')) return;
+  
+  await update(ref(db, `screens/${shopId}/${screenId}`), { 
+    restartRequest: Date.now(),
+    pingRequest: Date.now()
+  });
+  showToast('🔄 Restart komutu gönderildi', 'success');
+}
+
+// Tüm ekranları aynı anda restart et
+window.restartAllScreens = async function(shopId) {
+  if (!confirm(`${shops[shopId]?.name} dükkânındaki TÜM ekranlar yeniden başlatılacak. Emin misin?`)) return;
+  
+  const shopScreens = screens[shopId] || {};
+  const restartTime = Date.now();
+  
+  for (const sid of Object.keys(shopScreens)) {
+    await update(ref(db, `screens/${shopId}/${sid}`), { 
+      restartRequest: restartTime,
+      pingRequest: restartTime
+    });
+  }
+  showToast(`🔄 ${Object.keys(shopScreens).length} ekran restart ediliyor`, 'success');
 }
 
 // ── DELETE SHOP ──
