@@ -3,19 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <title>SignageOS · Ekran</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
-html, body {
-  width:100%; height:100vh;
-  background:#000;
-  font-family: sans-serif;
-  overflow:hidden;
-}
+html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; overflow:hidden; }
 
-/* ── SETUP EKRANI (ilk açılışta) ── */
 #setupScreen {
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
@@ -24,26 +16,21 @@ html, body {
 .setup-logo { font-size:32px; font-weight:800; color:#fff; margin-bottom:8px; }
 .setup-logo span { color:#00e676; }
 .setup-sub { font-size:14px; color:#718096; margin-bottom:40px; }
-.setup-field {
-  display:flex; flex-direction:column; gap:6px; width:360px; margin-bottom:16px;
-}
+.setup-field { display:flex; flex-direction:column; gap:6px; width:360px; margin-bottom:16px; }
 .setup-label { font-size:11px; font-weight:700; color:#718096; letter-spacing:1px; text-transform:uppercase; }
 .setup-input {
   background:#1a1d1d; border:1px solid rgba(255,255,255,.08);
   border-radius:8px; padding:12px 16px;
   color:#e2e8f0; font-size:14px; outline:none;
-  transition:border-color .2s;
 }
 .setup-input:focus { border-color:rgba(0,230,118,.4); }
 .setup-btn {
   width:360px; padding:14px; border-radius:8px; border:none;
   background:#00e676; color:#000; font-size:15px; font-weight:700;
-  cursor:pointer; margin-top:8px; transition:background .2s;
+  cursor:pointer; margin-top:8px;
 }
-.setup-btn:hover { background:#69f0ae; }
 .setup-note { font-size:12px; color:#4a5568; margin-top:16px; text-align:center; max-width:360px; }
 
-/* ── BEKLEME EKRANI ── */
 #waitScreen {
   display:none; flex-direction:column;
   align-items:center; justify-content:center;
@@ -60,26 +47,15 @@ html, body {
 .wait-msg { font-size:14px; color:#718096; }
 .wait-status { font-size:12px; color:#4a5568; margin-top:8px; }
 
-/* ── MENÜ FRAME ── */
-#menuFrame {
-  display:none;
-  position:fixed; inset:0;
-  width:100vw; height:100vh;
-  border:none;
-}
+#menuFrame { display:none; position:fixed; inset:0; width:100vw; height:100vh; border:none; }
 
-/* ── STATUS BAR (sağ alt köşe, çok küçük) ── */
 #statusBar {
   position:fixed; bottom:12px; right:12px;
   display:flex; align-items:center; gap:6px;
   background:rgba(0,0,0,.6); border-radius:20px; padding:5px 10px;
-  font-size:10px; color:rgba(255,255,255,.4); pointer-events:none;
-  z-index:9999;
+  font-size:10px; color:rgba(255,255,255,.4); pointer-events:none; z-index:9999;
 }
-.status-dot-sm {
-  width:6px; height:6px; border-radius:50%;
-  background:#00e676; animation:pulse 2s infinite;
-}
+#statusDot { width:6px; height:6px; border-radius:50%; background:#00e676; animation:pulse 2s infinite; }
 
 @keyframes spin { to { transform:rotate(360deg); } }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
@@ -87,11 +63,9 @@ html, body {
 </head>
 <body>
 
-<!-- KURULUM EKRANI -->
 <div id="setupScreen">
   <div class="setup-logo">Signage<span>OS</span></div>
   <div class="setup-sub">Ekran Kurulumu</div>
-
   <div class="setup-field">
     <div class="setup-label">Dükkân ID</div>
     <input class="setup-input" id="inputShopId" placeholder="Örn: shop_arkas">
@@ -100,14 +74,13 @@ html, body {
     <div class="setup-label">Ekran ID</div>
     <input class="setup-input" id="inputScreenId" placeholder="Örn: screen_1">
   </div>
-  <button class="setup-btn" onclick="startScreen()">▶ Başlat</button>
+  <button class="setup-btn" id="startBtn">▶ Başlat</button>
   <div class="setup-note">
     Bu bilgileri Admin Panelindeki ekran kartından alabilirsiniz.<br>
     Bir kez girilince otomatik kaydedilir.
   </div>
 </div>
 
-<!-- BEKLEME EKRANI -->
 <div id="waitScreen">
   <div class="wait-logo">Signage<span>OS</span></div>
   <div class="wait-id" id="waitId">—</div>
@@ -116,27 +89,20 @@ html, body {
   <div class="wait-status" id="waitStatus">Admin panelinden menü URL'si gönderilmesini bekliyor</div>
 </div>
 
-<!-- MENÜ IFRAME -->
 <iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
-
-<!-- MENÜ GÖRSEL -->
 <img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;">
-
-<!-- MENÜ VİDEO -->
 <video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;"></video>
 
-<!-- STATUS BAR -->
 <div id="statusBar">
-  <div class="status-dot-sm"></div>
-  <span id="statusText">bağlı</span>
+  <div id="statusDot"></div>
+  <span id="statusText">bağlanıyor...</span>
 </div>
 
-<script type="module">
-import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, update, onValue }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
 
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyCdKqY3Z4hvfDocb9qRG1LFGX28AWB_EG0",
   authDomain: "signage-system-ee041.firebaseapp.com",
   databaseURL: "https://signage-system-ee041-default-rtdb.europe-west1.firebasedatabase.app",
@@ -144,454 +110,145 @@ const firebaseConfig = {
   storageBucket: "signage-system-ee041.firebasestorage.app",
   messagingSenderId: "583450867671",
   appId: "1:583450867671:web:b8409c66bdd6178222fd92"
-};
+});
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+var fdb = firebase.database();
+var shopId   = localStorage.getItem('sgs_shopId');
+var screenId = localStorage.getItem('sgs_screenId');
+var currentUrl = '';
 
-let shopId   = localStorage.getItem('sgs_shopId');
-let screenId = localStorage.getItem('sgs_screenId');
-let currentUrl = '';
-let pingInterval = null;
+// Başlat butonu
+document.getElementById('startBtn').addEventListener('click', function() {
+  var s = document.getElementById('inputShopId').value.trim();
+  var e = document.getElementById('inputScreenId').value.trim();
+  if (!s || !e) { alert('Lütfen her iki alanı da doldurun'); return; }
+  shopId = s;
+  screenId = e;
+  localStorage.setItem('sgs_shopId', shopId);
+  localStorage.setItem('sgs_screenId', screenId);
+  document.getElementById('setupScreen').style.display = 'none';
+  startListening();
+});
 
-// ── Kaydedilmiş ID varsa direkt başlat ──
+// Kaydedilmiş ID varsa direkt başlat
 if (shopId && screenId) {
   document.getElementById('setupScreen').style.display = 'none';
   startListening();
 }
 
-// ── Kurulum butonu ──
-window.startScreen = function() {
-  shopId   = document.getElementById('inputShopId').value.trim();
-  screenId = document.getElementById('inputScreenId').value.trim();
-  if (!shopId || !screenId) { alert('Lütfen her iki alanı da doldurun'); return; }
-  localStorage.setItem('sgs_shopId', shopId);
-  localStorage.setItem('sgs_screenId', screenId);
-  document.getElementById('setupScreen').style.display = 'none';
-  startListening();
-}
-
 function startListening() {
-  // Bekleme ekranını göster
   document.getElementById('waitScreen').style.display = 'flex';
-  document.getElementById('waitId').textContent = `${shopId} · ${screenId}`;
+  document.getElementById('waitId').textContent = shopId + ' · ' + screenId;
+  document.getElementById('statusText').textContent = 'bağlanıyor...';
 
-  // Sadece ekranı dinle (artık dükkân ayarına gerek yok)
-  const screenRef = ref(db, `screens/${shopId}/${screenId}`);
+  fdb.ref('screens/' + shopId + '/' + screenId).on('value', function(snap) {
+    var data = snap.val();
+    console.log('[Firebase] Veri:', data);
 
-  let currentScreenData = null;
-
-  let screenListener = null;
-
-  screenListener = onValue(screenRef, snap => {
-    currentScreenData = snap.val();
-    
-    console.log('[Firebase] Ekran verisi:', currentScreenData);
-    
-    if (!currentScreenData) {
-      document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. ID\'leri kontrol edin.';
-      document.getElementById('statusText').textContent = 'ekran bulunamadı';
+    if (!data) {
+      document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. Admin panelinden ekran oluşturun.';
+      document.getElementById('statusText').textContent = 'bulunamadı';
       return;
     }
-    
-    // ── ADMIN'DEN MANUEL RESTART KONTROLÜ ──
-    if (currentScreenData.restartRequest) {
-      const lastRestart = parseInt(localStorage.getItem('sgs_lastRestart') || '0');
-      if (currentScreenData.restartRequest > lastRestart) {
-        console.log('[Manual] Admin restart komutu alındı:', currentScreenData.restartRequest);
-        localStorage.setItem('sgs_lastRestart', currentScreenData.restartRequest.toString());
-        performFullRestart();
+
+    // Restart komutu
+    if (data.restartRequest) {
+      var last = parseInt(localStorage.getItem('sgs_lastRestart') || '0');
+      if (data.restartRequest > last) {
+        localStorage.setItem('sgs_lastRestart', String(data.restartRequest));
+        doRestart();
         return;
       }
     }
-    
-    // Son durumu localStorage'a kaydet (offline için)
-    localStorage.setItem('sgs_lastScreenData', JSON.stringify(currentScreenData));
-    
+
+    localStorage.setItem('sgs_lastData', JSON.stringify(data));
     document.getElementById('statusText').textContent = 'bağlı';
-    decideAndLoad();
-  }, error => {
-    console.error('[Firebase] Hata:', error);
-    
-    // Offline durumunda son kaydedilen veriyi kullan
-    const lastData = localStorage.getItem('sgs_lastScreenData');
-    if (lastData) {
-      currentScreenData = JSON.parse(lastData);
-      console.log('[Offline] Son kaydedilen veri kullanılıyor');
-      document.getElementById('waitStatus').textContent = 'Offline mod - Son menü gösteriliyor';
-      document.getElementById('statusText').textContent = 'offline - cache';
-      decideAndLoad();
-    } else {
-      document.getElementById('waitStatus').textContent = 'Bağlantı hatası';
-      document.getElementById('statusText').textContent = 'hata';
-    }
-  });
 
-  function decideAndLoad() {
-    if (!currentScreenData) return;
-
-    let urlToShow = currentScreenData.menuUrl;
-    let source = 'manual';
-
-    // Ekrana özel zaman bazlı menü aktif mi?
-    if (currentScreenData.scheduleEnabled) {
-      const scheduledUrl = getScheduledMenu(currentScreenData);
-      if (scheduledUrl) {
-        urlToShow = scheduledUrl;
-        source = 'schedule';
-      }
+    var url = data.menuUrl || '';
+    if (data.scheduleEnabled) {
+      var sched = getScheduledUrl(data);
+      if (sched) url = sched;
     }
 
-    if (urlToShow && urlToShow !== currentUrl) {
-      currentUrl = urlToShow;
-      loadMenu(urlToShow);
-      console.log(`[SignageOS] Menü yüklendi (${source}):`, urlToShow);
+    if (url && url !== currentUrl) {
+      currentUrl = url;
+      loadContent(url);
     }
 
-    if (!urlToShow) {
+    if (!url) {
       document.getElementById('waitScreen').style.display = 'flex';
       document.getElementById('menuFrame').style.display = 'none';
       document.getElementById('menuImage').style.display = 'none';
       document.getElementById('menuVideo').style.display = 'none';
     }
-  }
 
-  // Her 1 dakikada bir saati kontrol et (zaman bazlı geçişler için)
-  setInterval(decideAndLoad, 60000);
+  }, function(error) {
+    console.error('[Firebase] Hata:', error);
+    document.getElementById('waitStatus').textContent = 'Bağlantı hatası!';
+    document.getElementById('statusText').textContent = 'hata';
+    document.getElementById('statusDot').style.background = '#ff5252';
+  });
 
-  // Her 30 saniyede ping at (online durumu için)
+  // Ping
   sendPing();
-  pingInterval = setInterval(sendPing, 30000);
+  setInterval(sendPing, 30000);
 
-  // ── OTOMATİK GECE RESTART (03:00) ──
-  startAutoRestart();
+  // Gece restart
+  setInterval(function() {
+    var now = new Date();
+    if (now.getHours() === 3 && now.getMinutes() === 0) doRestart();
+  }, 60000);
 }
 
-// ── OTOMATİK YENİDEN BAŞLATMA SİSTEMİ ──
-function startAutoRestart() {
-  // Her dakika kontrol et: saat 03:00 mı?
-  setInterval(() => {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    
-    // Saat 03:00'te tam restart yap
-    if (hours === 3 && minutes === 0) {
-      console.log('[AutoRestart] Gece 03:00 - Tam restart başlatılıyor...');
-      performFullRestart();
-    }
-  }, 60000); // Her 60 saniyede bir kontrol
-  
-  console.log('[AutoRestart] Otomatik gece restart aktif - 03:00\'te tam restart');
+function loadContent(url) {
+  document.getElementById('menuFrame').style.display = 'none';
+  document.getElementById('menuImage').style.display = 'none';
+  document.getElementById('menuVideo').style.display = 'none';
+  document.getElementById('waitScreen').style.display = 'none';
+
+  var lower = url.toLowerCase();
+  if (lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)) {
+    document.getElementById('menuImage').src = url;
+    document.getElementById('menuImage').style.display = 'block';
+  } else if (lower.match(/\.(mp4|webm|mov)(\?|$)/)) {
+    document.getElementById('menuVideo').src = url;
+    document.getElementById('menuVideo').style.display = 'block';
+    document.getElementById('menuVideo').play().catch(function(){});
+  } else {
+    document.getElementById('menuFrame').src = url;
+    document.getElementById('menuFrame').style.display = 'block';
+  }
+  document.getElementById('statusText').textContent = 'yayında';
 }
 
-async function performFullRestart() {
-  try {
-    console.log('[AutoRestart] 1/4 - Restart bildirimi gösteriliyor...');
-    showRestartScreen();
-    
-    // Firebase'e restart bildirimi gönder
-    if (shopId && screenId) {
-      try {
-        await update(ref(db, `screens/${shopId}/${screenId}`), {
-          lastRestart: Date.now(),
-          restartReason: 'scheduled_03:00'
-        });
-      } catch(e) { console.log('[AutoRestart] Firebase ping hatası:', e); }
-    }
-    
-    console.log('[AutoRestart] 2/4 - IndexedDB temizleniyor...');
-    // IndexedDB cache'i temizle (eski medyalar silinir, yenileri tekrar indirilir)
-    try {
-      if (cacheDB) {
-        const transaction = cacheDB.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        await new Promise((resolve, reject) => {
-          const req = store.clear();
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-        console.log('[AutoRestart] IndexedDB temizlendi');
-      }
-    } catch(e) { console.log('[AutoRestart] IndexedDB temizlik hatası:', e); }
-    
-    console.log('[AutoRestart] 3/4 - Service Worker cache temizleniyor...');
-    // Service Worker cache'i temizle (varsa)
-    try {
-      if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
-        console.log('[AutoRestart] Service Worker cache temizlendi');
-      }
-    } catch(e) { console.log('[AutoRestart] Cache temizlik hatası:', e); }
-    
-    console.log('[AutoRestart] 4/4 - 5 saniye sonra tam yeniden başlatılıyor...');
-    
-    // 5 saniye bekle, sonra hard refresh (cache bypass)
-    setTimeout(() => {
-      // location.reload(true) eski yöntem, yeni yöntem URL'e timestamp ekle
-      const url = new URL(window.location.href);
-      url.searchParams.set('_restart', Date.now());
-      window.location.href = url.toString();
-    }, 5000);
-    
-  } catch(err) {
-    console.error('[AutoRestart] Restart hatası, basit reload yapılıyor:', err);
-    setTimeout(() => location.reload(), 2000);
-  }
-}
-
-function showRestartScreen() {
-  // Ekrana restart bildirimi göster
-  const overlay = document.createElement('div');
-  overlay.id = 'restartOverlay';
-  overlay.innerHTML = `
-    <div style="
-      position:fixed; inset:0; z-index:99999;
-      background:#080909; color:#e2e8f0;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      font-family: sans-serif;
-    ">
-      <div style="font-size:24px; font-weight:800; margin-bottom:6px;">
-        Signage<span style="color:#00e676;">OS</span>
-      </div>
-      <div style="font-size:13px; color:#4a5568; margin-bottom:32px; letter-spacing:2px;">
-        OTOMATİK BAKIM
-      </div>
-      <div style="
-        width:50px; height:50px;
-        border:3px solid rgba(0,230,118,.2);
-        border-top-color:#00e676;
-        border-radius:50%;
-        animation:spin .8s linear infinite;
-        margin-bottom:24px;
-      "></div>
-      <div style="font-size:14px; color:#718096;">Sistem yenileniyor...</div>
-      <div style="font-size:12px; color:#4a5568; margin-top:8px;">
-        Bu işlem birkaç saniye sürer
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-// Saate göre hangi menüyü göstereceğini belirle (ekran objesi alır)
-function getScheduledMenu(screen) {
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  function timeToMinutes(timeStr) {
-    if (!timeStr) return -1;
-    const [h, m] = timeStr.split(':').map(Number);
-    return h * 60 + m;
-  }
-
-  function inRange(start, end, current) {
-    if (start === -1 || end === -1) return false;
-    if (end > start) {
-      return current >= start && current < end;
-    } else {
-      return current >= start || current < end;
-    }
-  }
-
-  // Sabah
-  const morningStart = timeToMinutes(screen.scheduleMorningStart);
-  const morningEnd   = timeToMinutes(screen.scheduleMorningEnd);
-  if (screen.scheduleMorningUrl && inRange(morningStart, morningEnd, currentMinutes)) {
-    return screen.scheduleMorningUrl;
-  }
-
-  // Öğlen
-  const noonStart = timeToMinutes(screen.scheduleNoonStart);
-  const noonEnd   = timeToMinutes(screen.scheduleNoonEnd);
-  if (screen.scheduleNoonUrl && inRange(noonStart, noonEnd, currentMinutes)) {
-    return screen.scheduleNoonUrl;
-  }
-
-  // Akşam
-  const eveningStart = timeToMinutes(screen.scheduleEveningStart);
-  const eveningEnd   = timeToMinutes(screen.scheduleEveningEnd);
-  if (screen.scheduleEveningUrl && inRange(eveningStart, eveningEnd, currentMinutes)) {
-    return screen.scheduleEveningUrl;
-  }
-
+function getScheduledUrl(data) {
+  var now = new Date();
+  var cur = now.getHours() * 60 + now.getMinutes();
+  function toMin(t) { if (!t) return -1; var p = t.split(':').map(Number); return p[0]*60+p[1]; }
+  function inRange(s,e,c) { if(s<0||e<0) return false; return e>s?(c>=s&&c<e):(c>=s||c<e); }
+  if (data.scheduleMorningUrl && inRange(toMin(data.scheduleMorningStart), toMin(data.scheduleMorningEnd), cur)) return data.scheduleMorningUrl;
+  if (data.scheduleNoonUrl && inRange(toMin(data.scheduleNoonStart), toMin(data.scheduleNoonEnd), cur)) return data.scheduleNoonUrl;
+  if (data.scheduleEveningUrl && inRange(toMin(data.scheduleEveningStart), toMin(data.scheduleEveningEnd), cur)) return data.scheduleEveningUrl;
   return null;
 }
 
-function loadMenu(url) {
-  const frame = document.getElementById('menuFrame');
-  const img   = document.getElementById('menuImage');
-  const vid   = document.getElementById('menuVideo');
-
-  // Hepsini gizle
-  frame.style.display = 'none';
-  img.style.display   = 'none';
-  vid.style.display   = 'none';
-  document.getElementById('waitScreen').style.display = 'none';
-
-  const lower = url.toLowerCase();
-
-  if (lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)) {
-    // GÖRSEL
-    loadWithCache(url, 'image').then(src => {
-      img.src = src;
-      img.style.display = 'block';
-    });
-  } else if (lower.match(/\.(mp4|webm|mov)(\?|$)/)) {
-    // VIDEO
-    loadWithCache(url, 'video').then(src => {
-      vid.src = src;
-      vid.style.display = 'block';
-      vid.play().catch(()=>{});
-    });
-  } else {
-    // HTML veya diğer URL
-    frame.src = url;
-    frame.style.display = 'block';
-  }
-
-  document.getElementById('statusText').textContent = 'yayında';
-}
-
-// ── OFFLINE CACHE SİSTEMİ ──
-let cacheDB;
-const DB_NAME = 'SignageCache';
-const STORE_NAME = 'media';
-
-async function initDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      cacheDB = request.result;
-      resolve(db);
-    };
-    request.onupgradeneeded = (e) => {
-      const database = e.target.result;
-      if (!database.objectStoreNames.contains(STORE_NAME)) {
-        database.createObjectStore(STORE_NAME, { keyPath: 'url' });
-      }
-    };
-  });
-}
-
-async function loadWithCache(url, type) {
-  // Önce cache'e kayıtlı mı kontrol et
-  const cached = await getCachedMedia(url);
-  
-  // İnternet varsa: URL'den yükle + cache'e kaydet (arka planda)
-  if (navigator.onLine) {
-    // Arka planda indir ve cache'e kaydet (await yok - asenkron)
-    downloadAndCache(url, type).catch(err => console.log('[Cache] İndirme hatası:', err));
-    
-    // Cached varsa onu kullan (daha hızlı), yoksa URL'i direkt kullan
-    return cached ? cached : url;
-  }
-  
-  // İnternet yoksa: cache'den kullan
-  if (cached) {
-    updateOnlineStatus(false);
-    return cached;
-  }
-  
-  // Cache de yok, internet de yok - yine de URL'i dene
-  updateOnlineStatus(false);
-  return url;
-}
-
-async function downloadAndCache(url, type) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Fetch failed');
-    
-    const blob = await response.blob();
-    const objectURL = URL.createObjectURL(blob);
-    
-    // IndexedDB'ye kaydet
-    await saveCachedMedia(url, blob, type);
-    
-    return objectURL;
-  } catch(err) {
-    console.log('[Cache] Download error:', err);
-    throw err;
-  }
-}
-
-async function saveCachedMedia(url, blob, type) {
-  if (!cacheDB) await initDB();
-  
-  return new Promise((resolve, reject) => {
-    const transaction = cacheDB.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put({ url, blob, type, cached: Date.now() });
-    
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function getCachedMedia(url) {
-  if (!cacheDB) await initDB();
-  
-  return new Promise((resolve, reject) => {
-    const transaction = cacheDB.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(url);
-    
-    request.onsuccess = () => {
-      if (request.result && request.result.blob) {
-        const objectURL = URL.createObjectURL(request.result.blob);
-        resolve(objectURL);
-      } else {
-        resolve(null);
-      }
-    };
-    request.onerror = () => resolve(null);
-  });
-}
-
-function updateOnlineStatus(isOnline) {
-  const statusBar = document.getElementById('statusBar');
-  const statusDot = document.getElementById('statusDot');
-  
-  if (isOnline) {
-    statusDot.style.background = '#00e676';
-    statusBar.style.background = 'rgba(8,9,9,0.7)';
-  } else {
-    statusDot.style.background = '#ff5252';
-    statusBar.style.background = 'rgba(255,82,82,0.15)';
-    document.getElementById('statusText').textContent = 'offline';
-  }
-}
-
-// Online/Offline event listeners
-window.addEventListener('online', () => {
-  updateOnlineStatus(true);
-  document.getElementById('statusText').textContent = 'yayında';
-  // İnternet geldi - Firebase'i tekrar dinle
-  if (shopId && screenId) listenToScreen();
-});
-
-window.addEventListener('offline', () => {
-  updateOnlineStatus(false);
-});
-
-// DB'yi başlat
-initDB().catch(err => console.log('[Cache] DB init error:', err));
-
-async function sendPing() {
+function sendPing() {
   if (!shopId || !screenId) return;
-  try {
-    await update(ref(db, `screens/${shopId}/${screenId}`), {
-      lastSeen: Date.now(),
-      online: true
-    });
-  } catch(e) {
-    document.getElementById('statusText').textContent = 'bağlantı yok';
-  }
+  fdb.ref('screens/' + shopId + '/' + screenId).update({ lastSeen: Date.now(), online: true });
 }
+
+function doRestart() {
+  var o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#080909;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#e2e8f0;text-align:center;';
+  o.innerHTML = '<div style="font-size:24px;font-weight:800;margin-bottom:8px;">Signage<span style="color:#00e676">OS</span></div><div style="font-size:12px;color:#4a5568;margin-bottom:24px;letter-spacing:2px;">OTOMATİK BAKIM</div><div style="width:40px;height:40px;border:3px solid rgba(0,230,118,.2);border-top-color:#00e676;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;"></div><div style="font-size:13px;color:#718096;">Yenileniyor...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+  document.body.appendChild(o);
+  setTimeout(function() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('_r', Date.now());
+    window.location.href = url.toString();
+  }, 3000);
+}
+
 </script>
 </body>
 </html>
