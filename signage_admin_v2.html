@@ -311,25 +311,51 @@ html,body { min-height:100vh; background:var(--bg); font-family:'Inter',sans-ser
 <script>
 const ADMIN_PASSWORD = "Musluk2000";  // Şifren burada
 
+let loginAttempts = 0;
+
 function checkLogin() {
   const input = document.getElementById('loginPassword').value;
   const err = document.getElementById('loginError');
 
   if (input === ADMIN_PASSWORD) {
-    sessionStorage.setItem('sgs_auth', 'ok');
     document.getElementById('loginOverlay').style.display = 'none';
+    loginAttempts = 0;
   } else {
-    err.textContent = '❌ Yanlış şifre';
+    loginAttempts++;
+    err.textContent = `❌ Yanlış şifre (${loginAttempts}. deneme)`;
     document.getElementById('loginPassword').value = '';
+    
+    // 3 hatalı denemeden sonra 5 saniye bekleme
+    if (loginAttempts >= 3) {
+      const btn = document.querySelector('#loginOverlay button');
+      const input = document.getElementById('loginPassword');
+      btn.disabled = true;
+      input.disabled = true;
+      btn.style.opacity = '0.5';
+      let countdown = 5;
+      err.textContent = `🔒 Çok fazla hatalı deneme! ${countdown} saniye bekleyin...`;
+      const timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          err.textContent = `🔒 Çok fazla hatalı deneme! ${countdown} saniye bekleyin...`;
+        } else {
+          clearInterval(timer);
+          btn.disabled = false;
+          input.disabled = false;
+          btn.style.opacity = '1';
+          err.textContent = '';
+          loginAttempts = 0;
+          input.focus();
+        }
+      }, 1000);
+    }
   }
 }
 
-// Daha önce giriş yapıldı mı kontrol et
-if (sessionStorage.getItem('sgs_auth') === 'ok') {
-  document.getElementById('loginOverlay').style.display = 'none';
-} else {
-  setTimeout(() => document.getElementById('loginPassword').focus(), 100);
-}
+// Sayfa açılır açılmaz şifre alanına focus
+setTimeout(() => document.getElementById('loginPassword').focus(), 100);
+
+// Sayfa kapatılırken yenilense de tekrar şifre sorar (sessionStorage YOK)
 </script>
 
 <!-- TOPBAR -->
