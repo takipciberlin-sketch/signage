@@ -286,13 +286,17 @@ function loadMenu(url) {
 
   if (lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)) {
     // GÖRSEL
-    img.src = url;
-    img.style.display = 'block';
+    loadWithCache(url, 'image').then(src => {
+      img.src = src;
+      img.style.display = 'block';
+    });
   } else if (lower.match(/\.(mp4|webm|mov)(\?|$)/)) {
     // VIDEO
-    vid.src = url;
-    vid.style.display = 'block';
-    vid.play().catch(()=>{});
+    loadWithCache(url, 'video').then(src => {
+      vid.src = src;
+      vid.style.display = 'block';
+      vid.play().catch(()=>{});
+    });
   } else {
     // HTML veya diğer URL
     frame.src = url;
@@ -301,6 +305,132 @@ function loadMenu(url) {
 
   document.getElementById('statusText').textContent = 'yayında';
 }
+
+// ── OFFLINE CACHE SİSTEMİ ──
+let db;
+const DB_NAME = 'SignageCache';
+const STORE_NAME = 'media';
+
+async function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      db = request.result;
+      resolve(db);
+    };
+    request.onupgradeneeded = (e) => {
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains(STORE_NAME)) {
+        database.createObjectStore(STORE_NAME, { keyPath: 'url' });
+      }
+    };
+  });
+}
+
+async function loadWithCache(url, type) {
+  // Önce cache'e kayıtlı mı kontrol et
+  const cached = await getCachedMedia(url);
+  
+  // İnternet varsa: URL'den yükle + cache'e kaydet (arka planda)
+  if (navigator.onLine) {
+    // Arka planda indir ve cache'e kaydet (await yok - asenkron)
+    downloadAndCache(url, type).catch(err => console.log('[Cache] İndirme hatası:', err));
+    
+    // Cached varsa onu kullan (daha hızlı), yoksa URL'i direkt kullan
+    return cached ? cached : url;
+  }
+  
+  // İnternet yoksa: cache'den kullan
+  if (cached) {
+    updateOnlineStatus(false);
+    return cached;
+  }
+  
+  // Cache de yok, internet de yok - yine de URL'i dene
+  updateOnlineStatus(false);
+  return url;
+}
+
+async function downloadAndCache(url, type) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Fetch failed');
+    
+    const blob = await response.blob();
+    const objectURL = URL.createObjectURL(blob);
+    
+    // IndexedDB'ye kaydet
+    await saveCachedMedia(url, blob, type);
+    
+    return objectURL;
+  } catch(err) {
+    console.log('[Cache] Download error:', err);
+    throw err;
+  }
+}
+
+async function saveCachedMedia(url, blob, type) {
+  if (!db) await initDB();
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put({ url, blob, type, cached: Date.now() });
+    
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getCachedMedia(url) {
+  if (!db) await initDB();
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(url);
+    
+    request.onsuccess = () => {
+      if (request.result && request.result.blob) {
+        const objectURL = URL.createObjectURL(request.result.blob);
+        resolve(objectURL);
+      } else {
+        resolve(null);
+      }
+    };
+    request.onerror = () => resolve(null);
+  });
+}
+
+function updateOnlineStatus(isOnline) {
+  const statusBar = document.getElementById('statusBar');
+  const statusDot = document.getElementById('statusDot');
+  
+  if (isOnline) {
+    statusDot.style.background = '#00e676';
+    statusBar.style.background = 'rgba(8,9,9,0.7)';
+  } else {
+    statusDot.style.background = '#ff5252';
+    statusBar.style.background = 'rgba(255,82,82,0.15)';
+    document.getElementById('statusText').textContent = 'offline';
+  }
+}
+
+// Online/Offline event listeners
+window.addEventListener('online', () => {
+  updateOnlineStatus(true);
+  document.getElementById('statusText').textContent = 'yayında';
+  // İnternet geldi - Firebase'i tekrar dinle
+  if (shopId && screenId) listenToScreen();
+});
+
+window.addEventListener('offline', () => {
+  updateOnlineStatus(false);
+});
+
+// DB'yi başlat
+initDB().catch(err => console.log('[Cache] DB init error:', err));
 
 async function sendPing() {
   if (!shopId || !screenId) return;
