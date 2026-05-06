@@ -7,30 +7,62 @@
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; overflow:hidden; }
-#setupScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#080909; color:#e2e8f0; }
+
+#setupScreen {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  height:100vh; background:#080909; color:#e2e8f0;
+}
 .setup-logo { font-size:32px; font-weight:800; color:#fff; margin-bottom:8px; }
 .setup-logo span { color:#00e676; }
 .setup-sub { font-size:14px; color:#718096; margin-bottom:40px; }
 .setup-field { display:flex; flex-direction:column; gap:6px; width:360px; margin-bottom:16px; }
 .setup-label { font-size:11px; font-weight:700; color:#718096; letter-spacing:1px; text-transform:uppercase; }
-.setup-input { background:#1a1d1d; border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:12px 16px; color:#e2e8f0; font-size:14px; outline:none; }
-.setup-btn { width:360px; padding:14px; border-radius:8px; border:none; background:#00e676; color:#000; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; }
+.setup-input {
+  background:#1a1d1d; border:1px solid rgba(255,255,255,.08);
+  border-radius:8px; padding:12px 16px;
+  color:#e2e8f0; font-size:14px; outline:none;
+}
+.setup-input:focus { border-color:rgba(0,230,118,.4); }
+.setup-btn {
+  width:360px; padding:14px; border-radius:8px; border:none;
+  background:#00e676; color:#000; font-size:15px; font-weight:700;
+  cursor:pointer; margin-top:8px;
+}
 .setup-note { font-size:12px; color:#4a5568; margin-top:16px; text-align:center; max-width:360px; }
-#waitScreen { display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#080909; color:#e2e8f0; text-align:center; }
+
+#waitScreen {
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  height:100vh; background:#080909; color:#e2e8f0; text-align:center;
+}
 .wait-logo { font-size:24px; font-weight:800; color:#fff; margin-bottom:6px; }
 .wait-logo span { color:#00e676; }
 .wait-id { font-size:12px; color:#4a5568; margin-bottom:32px; font-family:monospace; }
-.wait-spinner { width:40px; height:40px; border:3px solid rgba(0,230,118,.2); border-top-color:#00e676; border-radius:50%; animation:spin .8s linear infinite; margin-bottom:16px; }
+.wait-spinner {
+  width:40px; height:40px; border:3px solid rgba(0,230,118,.2);
+  border-top-color:#00e676; border-radius:50%;
+  animation:spin .8s linear infinite; margin-bottom:16px;
+}
 .wait-msg { font-size:14px; color:#718096; }
 .wait-status { font-size:12px; color:#4a5568; margin-top:8px; }
+
 #menuFrame { display:none; position:fixed; inset:0; width:100vw; height:100vh; border:none; }
-#statusBar { position:fixed; bottom:12px; right:12px; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.6); border-radius:20px; padding:5px 10px; font-size:10px; color:rgba(255,255,255,.4); pointer-events:none; z-index:9999; }
+
+#statusBar {
+  position:fixed; bottom:12px; right:12px;
+  display:flex; align-items:center; gap:6px;
+  background:rgba(0,0,0,.6); border-radius:20px; padding:5px 10px;
+  font-size:10px; color:rgba(255,255,255,.4); pointer-events:none; z-index:9999;
+}
 #statusDot { width:6px; height:6px; border-radius:50%; background:#00e676; animation:pulse 2s infinite; }
+
 @keyframes spin { to { transform:rotate(360deg); } }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
 </style>
 </head>
 <body>
+
 <div id="setupScreen">
   <div class="setup-logo">Signage<span>OS</span></div>
   <div class="setup-sub">Ekran Kurulumu</div>
@@ -43,8 +75,12 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
     <input class="setup-input" id="inputScreenId" placeholder="Örn: screen_1">
   </div>
   <button class="setup-btn" id="startBtn">▶ Başlat</button>
-  <div class="setup-note">Bu bilgileri Admin Panelindeki ekran kartından alabilirsiniz.<br>Bir kez girilince otomatik kaydedilir.</div>
+  <div class="setup-note">
+    Bu bilgileri Admin Panelindeki ekran kartından alabilirsiniz.<br>
+    Bir kez girilince otomatik kaydedilir.
+  </div>
 </div>
+
 <div id="waitScreen">
   <div class="wait-logo">Signage<span>OS</span></div>
   <div class="wait-id" id="waitId">—</div>
@@ -52,57 +88,281 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
   <div class="wait-msg">Menü bekleniyor...</div>
   <div class="wait-status" id="waitStatus">Admin panelinden menü URL'si gönderilmesini bekliyor</div>
 </div>
+
 <iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
 <img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;">
 <video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;"></video>
-<div id="statusBar"><div id="statusDot"></div><span id="statusText">bağlanıyor...</span></div>
+
+<div id="statusBar">
+  <div id="statusDot"></div>
+  <span id="statusText">bağlanıyor...</span>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-firebase.initializeApp({apiKey:"AIzaSyCdKqY3Z4hvfDocb9qRG1LFGX28AWB_EG0",authDomain:"signage-system-ee041.firebaseapp.com",databaseURL:"https://signage-system-ee041-default-rtdb.europe-west1.firebasedatabase.app",projectId:"signage-system-ee041",storageBucket:"signage-system-ee041.firebasestorage.app",messagingSenderId:"583450867671",appId:"1:583450867671:web:b8409c66bdd6178222fd92"});
-var fdb=firebase.database(),shopId=localStorage.getItem('sgs_shopId'),screenId=localStorage.getItem('sgs_screenId'),currentUrl='';
-document.getElementById('startBtn').addEventListener('click',function(){
-  var s=document.getElementById('inputShopId').value.trim(),e=document.getElementById('inputScreenId').value.trim();
-  if(!s||!e){alert('Lütfen her iki alanı da doldurun');return;}
-  shopId=s;screenId=e;
-  localStorage.setItem('sgs_shopId',shopId);localStorage.setItem('sgs_screenId',screenId);
-  document.getElementById('setupScreen').style.display='none';
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCdKqY3Z4hvfDocb9qRG1LFGX28AWB_EG0",
+  authDomain: "signage-system-ee041.firebaseapp.com",
+  databaseURL: "https://signage-system-ee041-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "signage-system-ee041",
+  storageBucket: "signage-system-ee041.firebasestorage.app",
+  messagingSenderId: "583450867671",
+  appId: "1:583450867671:web:b8409c66bdd6178222fd92"
+});
+
+var fdb = firebase.database();
+var shopId   = localStorage.getItem('sgs_shopId');
+var screenId = localStorage.getItem('sgs_screenId');
+var currentUrl = '';
+
+// Başlat butonu
+document.getElementById('startBtn').addEventListener('click', function() {
+  var s = document.getElementById('inputShopId').value.trim();
+  var e = document.getElementById('inputScreenId').value.trim();
+  if (!s || !e) { alert('Lütfen her iki alanı da doldurun'); return; }
+  shopId = s;
+  screenId = e;
+  localStorage.setItem('sgs_shopId', shopId);
+  localStorage.setItem('sgs_screenId', screenId);
+  document.getElementById('setupScreen').style.display = 'none';
   startListening();
 });
-if(shopId&&screenId){document.getElementById('setupScreen').style.display='none';startListening();}
-function startListening(){
-  document.getElementById('waitScreen').style.display='flex';
-  document.getElementById('waitId').textContent=shopId+' · '+screenId;
-  document.getElementById('statusText').textContent='bağlanıyor...';
-  fdb.ref('screens/'+shopId+'/'+screenId).on('value',function(snap){
-    var data=snap.val();
-    if(!data){document.getElementById('waitStatus').textContent='Ekran bulunamadı.';return;}
-    if(data.restartRequest){var last=parseInt(localStorage.getItem('sgs_lastRestart')||'0');if(data.restartRequest>last){localStorage.setItem('sgs_lastRestart',String(data.restartRequest));doRestart();return;}}
-    localStorage.setItem('sgs_lastData',JSON.stringify(data));
-    document.getElementById('statusText').textContent='bağlı';
-    var url=data.menuUrl||'';
-    if(url&&url!==currentUrl){currentUrl=url;loadContent(url);}
-    if(!url){document.getElementById('waitScreen').style.display='flex';document.getElementById('menuFrame').style.display='none';document.getElementById('menuImage').style.display='none';document.getElementById('menuVideo').style.display='none';}
-  },function(error){document.getElementById('statusText').textContent='hata';document.getElementById('statusDot').style.background='#ff5252';});
-  sendPing();setInterval(sendPing,30000);
-  setInterval(function(){var now=new Date();if(now.getHours()===3&&now.getMinutes()===0)doRestart();},60000);
+
+// Kaydedilmiş ID varsa direkt başlat
+if (shopId && screenId) {
+  document.getElementById('setupScreen').style.display = 'none';
+  startListening();
 }
-function loadContent(url){
-  document.getElementById('menuFrame').style.display='none';document.getElementById('menuImage').style.display='none';document.getElementById('menuVideo').style.display='none';document.getElementById('waitScreen').style.display='none';
-  var lower=url.toLowerCase();
-  if(lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)){document.getElementById('menuImage').src=url;document.getElementById('menuImage').style.display='block';}
-  else if(lower.match(/\.(mp4|webm|mov)(\?|$)/)){document.getElementById('menuVideo').src=url;document.getElementById('menuVideo').style.display='block';document.getElementById('menuVideo').play().catch(function(){});}
-  else{document.getElementById('menuFrame').src=url;document.getElementById('menuFrame').style.display='block';}
-  document.getElementById('statusText').textContent='yayında';
+
+function startListening() {
+  document.getElementById('waitScreen').style.display = 'flex';
+  document.getElementById('waitId').textContent = shopId + ' · ' + screenId;
+  document.getElementById('statusText').textContent = 'bağlanıyor...';
+
+  fdb.ref('screens/' + shopId + '/' + screenId).on('value', function(snap) {
+    var data = snap.val();
+    console.log('[Firebase] Veri:', data);
+
+    if (!data) {
+      document.getElementById('waitStatus').textContent = 'Ekran bulunamadı. Admin panelinden ekran oluşturun.';
+      document.getElementById('statusText').textContent = 'bulunamadı';
+      return;
+    }
+
+    // Restart komutu
+    if (data.restartRequest) {
+      var last = parseInt(localStorage.getItem('sgs_lastRestart') || '0');
+      if (data.restartRequest > last) {
+        localStorage.setItem('sgs_lastRestart', String(data.restartRequest));
+        doRestart();
+        return;
+      }
+    }
+
+    localStorage.setItem('sgs_lastData', JSON.stringify(data));
+    document.getElementById('statusText').textContent = 'bağlı';
+
+    var url = data.menuUrl || '';
+    if (data.scheduleEnabled) {
+      var sched = getScheduledUrl(data);
+      if (sched) url = sched;
+    }
+
+    if (url && url !== currentUrl) {
+      currentUrl = url;
+      loadContent(url);
+    }
+
+    if (!url) {
+      document.getElementById('waitScreen').style.display = 'flex';
+      document.getElementById('menuFrame').style.display = 'none';
+      document.getElementById('menuImage').style.display = 'none';
+      document.getElementById('menuVideo').style.display = 'none';
+    }
+
+  }, function(error) {
+    console.error('[Firebase] Hata:', error);
+    // Offline - son kaydedilen veriyi kullan
+    var lastData = localStorage.getItem('sgs_lastData');
+    if (lastData) {
+      var data = JSON.parse(lastData);
+      var url = data.menuUrl || '';
+      if (url) {
+        document.getElementById('statusDot').style.background = '#ffab40';
+        document.getElementById('statusText').textContent = 'offline - cache';
+        document.getElementById('waitScreen').style.display = 'none';
+        loadContent(url);
+      }
+    } else {
+      document.getElementById('waitStatus').textContent = 'Bağlantı yok, cache bulunamadı';
+      document.getElementById('statusText').textContent = 'offline';
+      document.getElementById('statusDot').style.background = '#ff5252';
+    }
+  });
+
+  // Ping
+  sendPing();
+  setInterval(sendPing, 30000);
+
+  // Gece restart
+  setInterval(function() {
+    var now = new Date();
+    if (now.getHours() === 3 && now.getMinutes() === 0) doRestart();
+  }, 60000);
 }
-function sendPing(){if(!shopId||!screenId)return;fdb.ref('screens/'+shopId+'/'+screenId).update({lastSeen:Date.now(),online:true});}
-function doRestart(){
-  var o=document.createElement('div');
-  o.style.cssText='position:fixed;inset:0;z-index:99999;background:#080909;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#e2e8f0;text-align:center;';
-  o.innerHTML='<div style="font-size:24px;font-weight:800;margin-bottom:8px;">Signage<span style="color:#00e676">OS</span></div><div style="width:40px;height:40px;border:3px solid rgba(0,230,118,.2);border-top-color:#00e676;border-radius:50%;animation:spin .8s linear infinite;margin:16px auto;"></div><div style="font-size:13px;color:#718096;">Yenileniyor...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+
+// ── OFFLINE CACHE SİSTEMİ ──
+var cacheDB = null;
+var CACHE_DB = 'SignageCache';
+var CACHE_STORE = 'media';
+
+function initCache() {
+  return new Promise(function(resolve) {
+    try {
+      var req = indexedDB.open(CACHE_DB, 1);
+      req.onupgradeneeded = function(e) {
+        e.target.result.createObjectStore(CACHE_STORE, { keyPath: 'url' });
+      };
+      req.onsuccess = function(e) {
+        cacheDB = e.target.result;
+        resolve(true);
+      };
+      req.onerror = function() { resolve(false); };
+    } catch(e) { resolve(false); }
+  });
+}
+
+function getFromCache(url) {
+  return new Promise(function(resolve) {
+    if (!cacheDB) { resolve(null); return; }
+    try {
+      var tx = cacheDB.transaction([CACHE_STORE], 'readonly');
+      var req = tx.objectStore(CACHE_STORE).get(url);
+      req.onsuccess = function() {
+        if (req.result && req.result.blob) {
+          resolve(URL.createObjectURL(req.result.blob));
+        } else {
+          resolve(null);
+        }
+      };
+      req.onerror = function() { resolve(null); };
+    } catch(e) { resolve(null); }
+  });
+}
+
+function saveToCache(url, blob) {
+  return new Promise(function(resolve) {
+    if (!cacheDB) { resolve(); return; }
+    try {
+      var tx = cacheDB.transaction([CACHE_STORE], 'readwrite');
+      tx.objectStore(CACHE_STORE).put({ url: url, blob: blob, saved: Date.now() });
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function() { resolve(); };
+    } catch(e) { resolve(); }
+  });
+}
+
+async function loadWithCache(url, type) {
+  // Önce cache'e bak
+  var cached = await getFromCache(url);
+
+  if (navigator.onLine) {
+    // İnternet var - arka planda indir ve cache'e kaydet
+    fetch(url).then(function(r) {
+      if (r.ok) return r.blob();
+    }).then(function(blob) {
+      if (blob) saveToCache(url, blob);
+    }).catch(function() {});
+    // Cache varsa onu kullan (hızlı), yoksa direkt URL
+    return cached || url;
+  } else {
+    // İnternet yok - sadece cache
+    if (cached) {
+      document.getElementById('statusDot').style.background = '#ffab40';
+      document.getElementById('statusText').textContent = 'offline - cache';
+      return cached;
+    }
+    return url; // Cache de yok, dene bakalım
+  }
+}
+
+// Cache'i başlat
+initCache();
+
+function loadContent(url) {
+  document.getElementById('menuFrame').style.display = 'none';
+  document.getElementById('menuImage').style.display = 'none';
+  document.getElementById('menuVideo').style.display = 'none';
+  document.getElementById('waitScreen').style.display = 'none';
+
+  var lower = url.toLowerCase();
+
+  if (lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)) {
+    // GÖRSEL - cache ile yükle
+    loadWithCache(url, 'image').then(function(src) {
+      document.getElementById('menuImage').src = src;
+      document.getElementById('menuImage').style.display = 'block';
+    });
+  } else if (lower.match(/\.(mp4|webm|mov)(\?|$)/)) {
+    // VİDEO - cache ile yükle
+    loadWithCache(url, 'video').then(function(src) {
+      var vid = document.getElementById('menuVideo');
+      vid.src = src;
+      vid.style.display = 'block';
+      vid.play().catch(function(){});
+    });
+  } else {
+    // HTML iframe - cache yok
+    document.getElementById('menuFrame').src = url;
+    document.getElementById('menuFrame').style.display = 'block';
+  }
+
+  if (navigator.onLine) {
+    document.getElementById('statusDot').style.background = '#00e676';
+    document.getElementById('statusText').textContent = 'yayında';
+  }
+}
+
+// Online/Offline dinle
+window.addEventListener('online', function() {
+  document.getElementById('statusDot').style.background = '#00e676';
+  document.getElementById('statusText').textContent = 'yayında';
+});
+window.addEventListener('offline', function() {
+  document.getElementById('statusDot').style.background = '#ffab40';
+  document.getElementById('statusText').textContent = 'offline - cache';
+});
+
+function getScheduledUrl(data) {
+  var now = new Date();
+  var cur = now.getHours() * 60 + now.getMinutes();
+  function toMin(t) { if (!t) return -1; var p = t.split(':').map(Number); return p[0]*60+p[1]; }
+  function inRange(s,e,c) { if(s<0||e<0) return false; return e>s?(c>=s&&c<e):(c>=s||c<e); }
+  if (data.scheduleMorningUrl && inRange(toMin(data.scheduleMorningStart), toMin(data.scheduleMorningEnd), cur)) return data.scheduleMorningUrl;
+  if (data.scheduleNoonUrl && inRange(toMin(data.scheduleNoonStart), toMin(data.scheduleNoonEnd), cur)) return data.scheduleNoonUrl;
+  if (data.scheduleEveningUrl && inRange(toMin(data.scheduleEveningStart), toMin(data.scheduleEveningEnd), cur)) return data.scheduleEveningUrl;
+  return null;
+}
+
+function sendPing() {
+  if (!shopId || !screenId) return;
+  fdb.ref('screens/' + shopId + '/' + screenId).update({ lastSeen: Date.now(), online: true });
+}
+
+function doRestart() {
+  var o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#080909;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#e2e8f0;text-align:center;';
+  o.innerHTML = '<div style="font-size:24px;font-weight:800;margin-bottom:8px;">Signage<span style="color:#00e676">OS</span></div><div style="font-size:12px;color:#4a5568;margin-bottom:24px;letter-spacing:2px;">OTOMATİK BAKIM</div><div style="width:40px;height:40px;border:3px solid rgba(0,230,118,.2);border-top-color:#00e676;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;"></div><div style="font-size:13px;color:#718096;">Yenileniyor...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
   document.body.appendChild(o);
-  setTimeout(function(){var url=new URL(window.location.href);url.searchParams.set('_r',Date.now());window.location.href=url.toString();},3000);
+  setTimeout(function() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('_r', Date.now());
+    window.location.href = url.toString();
+  }, 3000);
 }
+
 </script>
 </body>
 </html>
