@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignageOS · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #080909;
+  --s1:     #0e1010;
+  --s2:     #141616;
+  --s3:     #1a1d1d;
+  --green:  #00e676;
+  --green2: #69f0ae;
+  --red:    #ff5252;
+  --amber:  #ffab40;
+  --blue:   #40c4ff;
+  --muted:  #4a5568;
+  --dim:    #2d3748;
+  --text:   #e2e8f0;
+  --text2:  #718096;
+  --border: rgba(255,255,255,0.06);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { min-height:100vh; background:var(--bg); font-family:'Inter',sans-serif; color:var(--text); }
+
+/* ── TOPBAR ── */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 32px; height:64px;
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:100;
+}
+.logo { font-size:18px; font-weight:800; letter-spacing:-0.5px; color:var(--text); }
+.logo span { color:var(--green); }
+.topbar-right { display:flex; align-items:center; gap:16px; }
+.sys-badge {
+  display:flex; align-items:center; gap:8px;
+  padding:6px 14px; border-radius:20px;
+  background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2);
+  font-size:12px; font-weight:600; color:var(--green); letter-spacing:1px;
+}
+.sys-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.time-display { font-family:'DM Mono',monospace; font-size:13px; color:var(--text2); }
+
+/* ── LAYOUT ── */
+.layout { display:grid; grid-template-columns:260px 1fr; min-height:calc(100vh - 64px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background:var(--s1); border-right:1px solid var(--border);
+  padding:24px 0;
+}
+.sidebar-section { padding:0 16px; margin-bottom:8px; }
+.sidebar-label {
+  font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted);
+  text-transform:uppercase; padding:0 12px; margin-bottom:8px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:8px;
+  font-size:14px; font-weight:500; color:var(--text2);
+  cursor:pointer; transition:all .2s; margin-bottom:2px;
+}
+.nav-item:hover { background:var(--s2); color:var(--text); }
+.nav-item.active { background:rgba(0,230,118,0.08); color:var(--green); }
+.nav-item .icon { font-size:16px; width:20px; text-align:center; }
+
+.sidebar-divider { height:1px; background:var(--border); margin:16px 16px; }
+
+.shop-list { padding:0 16px; }
+.shop-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; border-radius:8px;
+  font-size:13px; font-weight:500; color:var(--text2);
+  cursor:pointer; transition:all .2s; margin-bottom:2px;
+}
+.shop-item:hover { background:var(--s2); color:var(--text); }
+.shop-item.active { background:var(--s2); color:var(--text); }
+.shop-badge {
+  font-size:11px; padding:2px 8px; border-radius:10px;
+  background:var(--dim); color:var(--text2);
+  font-family:'DM Mono',monospace;
+}
+.shop-badge.online { background:rgba(0,230,118,0.15); color:var(--green); }
+
+/* ── MAIN ── */
+.main { padding:28px 32px; overflow-y:auto; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:28px;
+}
+.page-title { font-size:22px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+.page-sub { font-size:13px; color:var(--text2); margin-top:4px; font-weight:400; }
+
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 20px; border-radius:8px; border:none;
+  font-family:'Inter',sans-serif; font-size:13px; font-weight:600;
+  cursor:pointer; transition:all .2s;
+}
+.btn-primary { background:var(--green); color:#000; }
+.btn-primary:hover { background:var(--green2); transform:translateY(-1px); }
+.btn-ghost { background:var(--s2); color:var(--text2); border:1px solid var(--border); }
+.btn-ghost:hover { color:var(--text); border-color:rgba(255,255,255,.12); }
+.btn-danger { background:rgba(255,82,82,0.1); color:var(--red); border:1px solid rgba(255,82,82,0.2); }
+.btn-danger:hover { background:rgba(255,82,82,0.2); }
+
+/* ── STAT CARDS ── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.stat-card {
+  background:var(--s1); border:1px solid var(--border); border-radius:12px;
+  padding:20px 24px;
+}
+.stat-label { font-size:11px; font-weight:600; letter-spacing:1.5px; color:var(--text2); text-transform:uppercase; margin-bottom:8px; }
+.stat-val { font-size:28px; font-weight:700; letter-spacing:-0.5px; }
+.stat-val.green { color:var(--green); }
+.stat-val.red { color:var(--red); }
+.stat-val.amber { color:var(--amber); }
+.stat-val.blue { color:var(--blue); }
+.stat-sub { font-size:12px; color:var(--text2); margin-top:4px; font-weight:400; }
+
+/* ── SCREEN GRID ── */
+.section-title {
+  font-size:14px; font-weight:700; color:var(--text); letter-spacing:.5px;
+  margin-bottom:16px; display:flex; align-items:center; gap:8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+.screen-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-bottom:28px; }
+
+.screen-card {
+  background:var(--s1); border:1px solid var(--border); border-radius:12px;
+  padding:20px; transition:all .3s; position:relative; overflow:hidden;
+}
+.screen-card:hover { border-color:rgba(255,255,255,.1); transform:translateY(-2px); }
+.screen-card.online { border-color:rgba(0,230,118,0.2); }
+.screen-card.online::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--green), transparent);
+}
+.screen-card.offline { border-color:rgba(255,82,82,0.15); }
+.screen-card.offline::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--red), transparent);
+}
+
+.screen-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.screen-name { font-size:15px; font-weight:700; color:var(--text); }
+.screen-id { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); margin-top:2px; }
+
+.status-pill {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
+}
+.status-pill.online { background:rgba(0,230,118,0.1); color:var(--green); }
+.status-pill.offline { background:rgba(255,82,82,0.1); color:var(--red); }
+.status-pill.unknown { background:rgba(255,171,64,0.1); color:var(--amber); }
+.status-dot { width:6px; height:6px; border-radius:50%; }
+.status-dot.online { background:var(--green); animation:pulse 2s infinite; }
+.status-dot.offline { background:var(--red); }
+.status-dot.unknown { background:var(--amber); animation:pulse 2s infinite; }
+
+.screen-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+.meta-item { background:var(--s2); border-radius:8px; padding:10px 12px; }
+.meta-key { font-size:10px; color:var(--muted); font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
+.meta-val { font-size:13px; font-weight:600; color:var(--text); font-family:'DM Mono',monospace; }
+
+.screen-menu { background:var(--s2); border-radius:8px; padding:12px; margin-bottom:14px; }
+.menu-label { font-size:10px; color:var(--muted); font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+.menu-name { font-size:13px; font-weight:600; color:var(--text); }
+.menu-updated { font-size:11px; color:var(--text2); margin-top:2px; }
+
+.screen-actions { display:flex; gap:8px; }
+.screen-btn {
+  flex:1; padding:8px; border-radius:7px; border:none;
+  font-family:'Inter',sans-serif; font-size:12px; font-weight:600;
+  cursor:pointer; transition:all .2s;
+}
+.screen-btn.push { background:rgba(0,230,118,0.1); color:var(--green); border:1px solid rgba(0,230,118,0.2); }
+.screen-btn.push:hover { background:rgba(0,230,118,0.2); }
+.screen-btn.restart { background:var(--s2); color:var(--text2); border:1px solid var(--border); }
+.screen-btn.restart:hover { color:var(--text); }
+
+/* ── MENU MANAGER ── */
+.menu-manager { background:var(--s1); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:28px; }
+.menu-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+.menu-field { display:flex; flex-direction:column; gap:6px; }
+.field-label { font-size:11px; font-weight:700; color:var(--text2); letter-spacing:1px; text-transform:uppercase; }
+.field-input {
+  background:var(--s2); border:1px solid var(--border); border-radius:8px;
+  padding:10px 14px; color:var(--text); font-family:'Inter',sans-serif; font-size:13px;
+  outline:none; transition:border-color .2s;
+}
+.field-input:focus { border-color:rgba(0,230,118,.4); }
+.field-input::placeholder { color:var(--muted); }
+
+.menu-items-list { margin-top:16px; }
+.menu-item-row {
+  display:grid; grid-template-columns:1fr 2fr 80px 32px;
+  gap:10px; align-items:center; margin-bottom:8px;
+}
+.remove-btn {
+  width:32px; height:32px; border-radius:6px; border:none;
+  background:rgba(255,82,82,0.1); color:var(--red); font-size:16px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .2s;
+}
+.remove-btn:hover { background:rgba(255,82,82,0.2); }
+
+.add-item-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 16px; border-radius:8px; border:1px dashed var(--dim);
+  background:transparent; color:var(--text2); font-family:'Inter',sans-serif;
+  font-size:12px; font-weight:600; cursor:pointer; transition:all .2s;
+  width:100%; margin-top:8px; justify-content:center;
+}
+.add-item-btn:hover { border-color:var(--green); color:var(--green); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:24px; right:24px;
+  background:var(--s2); border:1px solid var(--border); border-radius:10px;
+  padding:14px 20px; font-size:13px; font-weight:600;
+  display:flex; align-items:center; gap:10px;
+  transform:translateY(80px); opacity:0;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  z-index:1000; max-width:320px;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-color:rgba(0,230,118,.3); color:var(--green); }
+.toast.error { border-color:rgba(255,82,82,.3); color:var(--red); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.7);
+  display:none; align-items:center; justify-content:center; z-index:200;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--s1); border:1px solid var(--border); border-radius:16px;
+  padding:28px; width:480px; max-width:90vw;
+}
+.modal-title { font-size:18px; font-weight:800; margin-bottom:6px; }
+.modal-sub { font-size:13px; color:var(--text2); margin-bottom:20px; }
+.modal-actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:4px; }
+::-webkit:scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--dim); border-radius:2px; }
+
+/* ── LOADING ── */
+.loading { display:flex; align-items:center; justify-content:center; gap:8px; padding:40px; color:var(--text2); font-size:14px; }
+.spinner { width:20px; height:20px; border:2px solid var(--dim); border-top-color:var(--green); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── EMPTY STATE ── */
+.empty { text-align:center; padding:48px; color:var(--text2); }
+.empty-icon { font-size:40px; margin-bottom:12px; }
+.empty-title { font-size:16px; font-weight:700; color:var(--text); margin-bottom:6px; }
+.empty-sub { font-size:13px; }
+</style>
+</head>
+<body>
+
+<!-- ŞİFRE KORUMASI -->
+<div id="loginOverlay" style="
+  position:fixed; inset:0;
+  background:#080909; z-index:9999;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  font-family:'Inter',sans-serif;
+">
+  <div style="font-size:32px;font-weight:800;color:#fff;margin-bottom:6px;">
+    Signage<span style="color:#00e676;">OS</span>
+  </div>
+  <div style="font-size:13px;color:#718096;margin-bottom:32px;letter-spacing:2px;">YÖNETİCİ GİRİŞİ</div>
+
+  <div style="width:340px;display:flex;flex-direction:column;gap:12px;">
+    <input id="loginPassword" type="password" placeholder="Şifre" style="
+      background:#1a1d1d; border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; padding:14px 18px;
+      color:#e2e8f0; font-size:15px; outline:none;
+      font-family:'Inter',sans-serif; width:100%;
+    " onkeydown="if(event.key==='Enter')checkLogin()">
+
+    <button onclick="checkLogin()" style="
+      padding:14px; border-radius:10px; border:none;
+      background:#00e676; color:#000; font-size:15px; font-weight:700;
+      cursor:pointer; font-family:'Inter',sans-serif;
+    ">▶ Giriş</button>
+
+    <div id="loginError" style="
+      color:#ff5252; font-size:12px; text-align:center;
+      margin-top:4px; min-height:18px;
+    "></div>
+  </div>
+
+  <div style="position:absolute;bottom:24px;font-size:11px;color:#4a5568;">
+    🔒 Yetkili erişim · Tüm girişler kaydedilir
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "Musluk2000";  // Şifren burada
+let loginAttempts = 0;
+
+function checkLogin() {
+  const input = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+
+  if (input === ADMIN_PASSWORD) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loginAttempts = 0;
+  } else {
+    loginAttempts++;
+    err.textContent = `❌ Yanlış şifre (${loginAttempts}. deneme)`;
+    document.getElementById('loginPassword').value = '';
+    
+    // 3 hatalı denemeden sonra 5 saniye bekleme
+    if (loginAttempts >= 3) {
+      const btn = document.querySelector('#loginOverlay button');
+      const inputEl = document.getElementById('loginPassword');
+      btn.disabled = true;
+      inputEl.disabled = true;
+      btn.style.opacity = '0.5';
+      let countdown = 5;
+      err.textContent = `🔒 Çok fazla hatalı deneme! ${countdown} saniye bekleyin...`;
+      const timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          err.textContent = `🔒 Çok fazla hatalı deneme! ${countdown} saniye bekleyin...`;
+        } else {
+          clearInterval(timer);
+          btn.disabled = false;
+          inputEl.disabled = false;
+          btn.style.opacity = '1';
+          err.textContent = '';
+          loginAttempts = 0;
+          inputEl.focus();
+        }
+      }, 1000);
+    }
+  }
+}
+
+// Her sayfa açılışında şifre sor (sessionStorage YOK)
+setTimeout(() => document.getElementById('loginPassword').focus(), 100);
+</script>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Signage<span>OS</span></div>
+  <div class="topbar-right">
+    <div class="time-display" id="clock">--:--:--</div>
+    <div class="sys-badge"><div class="sys-dot"></div>SİSTEM AKTİF</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Genel</div>
+      <div class="nav-item active" onclick="showView('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showView('screens')">
+        <span class="icon">📺</span> Ekranlar
+      </div>
+      <div class="nav-item" onclick="showView('menus')">
+        <span class="icon">🍽️</span> Menü Yönetimi
+      </div>
+      <div class="nav-item" onclick="showView('customers')">
+        <span class="icon">👥</span> Müşteriler
+      </div>
+      <div class="nav-item" onclick="showView('payments')">
+        <span class="icon">💰</span> Ödemeler
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dükkânlar</div>
+    </div>
+    <div class="shop-list" id="shopList">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="nav-item" onclick="openAddShop()">
+        <span class="icon">➕</span> Dükkân Ekle
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="mainContent">
+    <div class="loading"><div class="spinner"></div> Yükleniyor...</div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ADD SHOP MODAL -->
+<div class="modal-overlay" id="addShopModal">
+  <div class="modal" style="width:640px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title" id="shopModalTitle">Yeni Dükkân Ekle</div>
+    <div class="modal-sub" id="shopModalSub">Dükkân bilgilerini girin, ekranlar otomatik oluşturulur</div>
+
+    <!-- DÜKKÂN BİLGİLERİ -->
+    <div class="field-label" style="margin-top:8px;margin-bottom:10px;">🏪 Dükkân Bilgileri</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="menu-field">
+        <div class="field-label">Dükkân Adı</div>
+        <input class="field-input" id="newShopName" placeholder="Örn: Pasta & Salat Steglitz">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">Adres</div>
+        <input class="field-input" id="newShopAddr" placeholder="Örn: Berlin, Steglitz">
+      </div>
+    </div>
+
+    <!-- SAHİP BİLGİLERİ -->
+    <div class="field-label" style="margin-top:18px;margin-bottom:10px;">👤 Dükkân Sahibi</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="menu-field">
+        <div class="field-label">Ad Soyad</div>
+        <input class="field-input" id="newShopOwner" placeholder="Örn: Ahmet Yılmaz">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="menu-field">
+          <div class="field-label">📧 E-mail</div>
+          <input class="field-input" id="newShopEmail" type="email" placeholder="ornek@email.com">
+        </div>
+        <div class="menu-field">
+          <div class="field-label">📞 Telefon</div>
+          <input class="field-input" id="newShopPhone" type="tel" placeholder="+49 30 1234567">
+        </div>
+      </div>
+      <div class="menu-field">
+        <div class="field-label">💬 WhatsApp Numarası</div>
+        <input class="field-input" id="newShopWhatsapp" type="tel" placeholder="+49 175 1234567">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="menu-field">
+          <div class="field-label">🧾 Vergi No / Steuernummer</div>
+          <input class="field-input" id="newShopTaxId" placeholder="123/456/78900">
+        </div>
+        <div class="menu-field">
+          <div class="field-label">🏦 IBAN / Banka Hesabı</div>
+          <input class="field-input" id="newShopIban" placeholder="DE89 3704 0044 0532 0130 00">
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAN SEÇİMİ -->
+    <div class="field-label" style="margin-top:18px;margin-bottom:10px;">📦 Abonelik Planı</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+
+      <div class="plan-card" data-plan="basic" data-screens="3" onclick="selectPlan(this)" style="
+        background:var(--s2); border:1.5px solid var(--border); border-radius:10px;
+        padding:16px 12px; cursor:pointer; transition:all .2s; text-align:center;
+      ">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">Başlangıç</div>
+        <div style="font-size:24px;font-weight:700;color:var(--text);margin-bottom:2px;">3</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:500;">ekran</div>
+      </div>
+
+      <div class="plan-card" data-plan="pro" data-screens="7" onclick="selectPlan(this)" style="
+        background:rgba(0,230,118,0.06); border:1.5px solid rgba(0,230,118,0.4); border-radius:10px;
+        padding:16px 12px; cursor:pointer; transition:all .2s; text-align:center; position:relative;
+      ">
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:9px;font-weight:800;padding:2px 8px;border-radius:10px;letter-spacing:.5px;">POPÜLER</div>
+        <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">Profesyonel</div>
+        <div style="font-size:24px;font-weight:700;color:var(--text);margin-bottom:2px;">7</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:500;">ekran</div>
+      </div>
+
+      <div class="plan-card" data-plan="premium" data-screens="15" onclick="selectPlan(this)" style="
+        background:var(--s2); border:1.5px solid var(--border); border-radius:10px;
+        padding:16px 12px; cursor:pointer; transition:all .2s; text-align:center;
+      ">
+        <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">Premium</div>
+        <div style="font-size:24px;font-weight:700;color:var(--text);margin-bottom:2px;">15</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:500;">ekran</div>
+      </div>
+
+    </div>
+
+    <!-- EKRAN VE ÜCRET -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+      <div class="menu-field">
+        <div class="field-label">Ekran Sayısı</div>
+        <input class="field-input" id="newShopScreens" type="number" min="1" max="50" value="7">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">Aylık Ücret (€)</div>
+        <input class="field-input" id="newShopFee" type="number" placeholder="Manuel gir">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addShopModal')">İptal</button>
+      <button class="btn btn-primary" id="shopSaveBtn" onclick="addShop()">✓ Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- PUSH MENU MODAL -->
+<div class="modal-overlay" id="pushMenuModal">
+  <div class="modal" style="width:560px;">
+    <div class="modal-title">📤 Menü Gönder</div>
+    <div class="modal-sub" id="pushModalSub">Ekrana menü gönderilecek</div>
+
+    <!-- DROPZONE -->
+    <div id="dropZone" style="
+      border:2px dashed var(--dim); border-radius:12px;
+      padding:40px 20px; text-align:center; cursor:pointer;
+      transition:all .3s; margin:16px 0; background:var(--s2);
+    " ondragover="event.preventDefault();this.style.borderColor='var(--green)';this.style.background='rgba(0,230,118,0.05)'"
+      ondragleave="this.style.borderColor='var(--dim)';this.style.background='var(--s2)'"
+      ondrop="handleDrop(event)"
+      onclick="document.getElementById('fileInput').click()">
+      <div id="dropIcon" style="font-size:36px;margin-bottom:10px;">📁</div>
+      <div id="dropText" style="font-size:14px;font-weight:600;color:var(--text);">Dosyayı buraya sürükle bırak</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:6px;">JPG, PNG, MP4, HTML · veya tıkla</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*,video/*,.html" style="display:none" onchange="handleFileSelect(this.files[0])">
+
+    <!-- UPLOAD PROGRESS -->
+    <div id="uploadProgress" style="display:none;margin:12px 0;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Yükleniyor...</span>
+        <span id="uploadPercent" style="font-size:12px;font-weight:700;color:var(--green);">0%</span>
+      </div>
+      <div style="background:var(--dim);border-radius:4px;height:6px;overflow:hidden;">
+        <div id="uploadBar" style="background:var(--green);height:100%;width:0%;transition:width .3s;border-radius:4px;"></div>
+      </div>
+    </div>
+
+    <!-- URL VEYA DOSYA ADI -->
+    <div class="menu-field" style="margin-top:8px;">
+      <div class="field-label">Menü URL (otomatik dolar veya elle gir)</div>
+      <input class="field-input" id="pushMenuUrl" placeholder="Dosya yükle veya URL yapıştır">
+    </div>
+    <div class="menu-field" style="margin-top:8px;">
+      <div class="field-label">Menü Adı</div>
+      <input class="field-input" id="pushScreenName" placeholder="Örn: Pasta & Salat Menüsü">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('pushMenuModal')">İptal</button>
+      <button class="btn btn-primary" id="pushSendBtn" onclick="confirmPush()">📤 Gönder</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="scheduleModal">
+  <div class="modal" style="width:760px;max-width:96vw;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:6px;">
+      <div>
+        <div class="modal-title">🕐 Zaman Bazlı Otomatik Menü</div>
+        <div class="modal-sub" id="scheduleModalSub">Bu ekran için saate göre menü değiştirme</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Aktif</span>
+        <div id="scheduleToggle" onclick="toggleScreenSchedule()" style="
+          width:42px;height:22px;border-radius:11px;
+          background:var(--dim);
+          position:relative;transition:background .2s;
+        ">
+          <div id="scheduleToggleHandle" style="
+            position:absolute;top:2px;left:2px;
+            width:18px;height:18px;border-radius:50%;
+            background:#fff;transition:left .2s;
+          "></div>
+        </div>
+      </label>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;">
+
+      <!-- SABAH -->
+      <div style="background:rgba(255,171,64,0.05);border:1px solid rgba(255,171,64,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🍳</span>
+          <span style="font-size:13px;font-weight:700;color:var(--amber);">Kahvaltı</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="sched_morning_start" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="sched_morning_end" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="sched_morning_url" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <button onclick="uploadScreenScheduleMenu('morning')" style="width:100%;background:rgba(255,171,64,0.1);color:var(--amber);border:1px solid rgba(255,171,64,0.25);border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+      </div>
+
+      <!-- ÖĞLEN -->
+      <div style="background:rgba(64,196,255,0.05);border:1px solid rgba(64,196,255,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🥗</span>
+          <span style="font-size:13px;font-weight:700;color:var(--blue);">Öğlen</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="sched_noon_start" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="sched_noon_end" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="sched_noon_url" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <button onclick="uploadScreenScheduleMenu('noon')" style="width:100%;background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+      </div>
+
+      <!-- AKŞAM -->
+      <div style="background:rgba(155,89,182,0.05);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">🍽️</span>
+          <span style="font-size:13px;font-weight:700;color:#c39bd3;">Akşam</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input type="time" id="sched_evening_start" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+          <input type="time" id="sched_evening_end" style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;">
+        </div>
+        <input type="text" id="sched_evening_url" placeholder="Menü URL veya yükle" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <button onclick="uploadScreenScheduleMenu('evening')" style="width:100%;background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.25);border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📤 Yükle</button>
+      </div>
+
+    </div>
+
+    <div style="margin-top:14px;padding:10px 14px;background:var(--s2);border-radius:8px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;">
+      <span>ℹ️</span>
+      <span>Aktif edilince bu TV ekranı saate göre otomatik menü değiştirir. Pasif olunca normal menü kullanılır.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('scheduleModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveScreenSchedule()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, remove, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ── Firebase Config ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCdKqY3Z4hvfDocb9qRG1LFGX28AWB_EG0",
+  authDomain: "signage-system-ee041.firebaseapp.com",
+  databaseURL: "https://signage-system-ee041-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "signage-system-ee041",
+  storageBucket: "signage-system-ee041.firebasestorage.app",
+  messagingSenderId: "583450867671",
+  appId: "1:583450867671:web:b8409c66bdd6178222fd92"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── State ──
+let shops   = {};
+let screens = {};
+let activeShopId = null;
+let pushTargetScreenId = null;
+let currentView = 'dashboard';
+
+// ── Clock ──
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('tr-TR');
+}, 1000);
+
+// ── Init: Arkaşın dükkânını oluştur (ilk açılışta) ──
+async function initDemo() {
+  const snap = await get(ref(db, 'shops'));
+  if (!snap.exists()) {
+    const shopId = 'shop_arkas';
+    await set(ref(db, `shops/${shopId}`), {
+      name: "Arkaşın Dükkânı",
+      address: "Berlin",
+      fee: 49,
+      createdAt: Date.now(),
+      active: true
+    });
+    // 7 ekran oluştur
+    for (let i = 1; i <= 7; i++) {
+      await set(ref(db, `screens/${shopId}/screen_${i}`), {
+        name: `Ekran ${i}`,
+        shopId: shopId,
+        menuUrl: '',
+        menuName: 'Menü yüklenmedi',
+        lastSeen: null,
+        online: false,
+        createdAt: Date.now()
+      });
+    }
+  }
+}
+
+// ── Listen shops ──
+onValue(ref(db, 'shops'), snap => {
+  shops = snap.val() || {};
+  renderShopList();
+  if (!activeShopId && Object.keys(shops).length > 0) {
+    activeShopId = Object.keys(shops)[0];
+  }
+  renderCurrentView();
+});
+
+// ── Listen screens ──
+onValue(ref(db, 'screens'), snap => {
+  screens = snap.val() || {};
+  renderCurrentView();
+});
+
+// ── Render shop list ──
+function renderShopList() {
+  const el = document.getElementById('shopList');
+  if (!Object.keys(shops).length) {
+    el.innerHTML = '<div style="padding:12px 16px;font-size:12px;color:var(--muted)">Henüz dükkân yok</div>';
+    return;
+  }
+  el.innerHTML = Object.entries(shops).map(([id, shop]) => {
+    const shopScreens = screens[id] || {};
+    const onlineCount = Object.values(shopScreens).filter(s => isOnline(s)).length;
+    const total = Object.keys(shopScreens).length;
+    const isActive = id === activeShopId;
+    return `
+    <div class="shop-item ${isActive ? 'active' : ''}" onclick="selectShop('${id}')">
+      <span>${shop.name}</span>
+      <span class="shop-badge ${onlineCount > 0 ? 'online' : ''}">${onlineCount}/${total}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Online check (60 sn içinde ping attıysa online) ──
+function isOnline(screen) {
+  if (!screen.lastSeen) return false;
+  return (Date.now() - screen.lastSeen) < 60000;
+}
+
+function getStatus(screen) {
+  if (!screen.lastSeen) return 'unknown';
+  return isOnline(screen) ? 'online' : 'offline';
+}
+
+function statusLabel(s) {
+  if (s === 'online') return 'Çevrimiçi';
+  if (s === 'offline') return 'Çevrimdışı';
+  return 'Bilinmiyor';
+}
+
+function timeAgo(ts) {
+  if (!ts) return 'Hiç bağlanmadı';
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return `${diff}s önce`;
+  if (diff < 3600) return `${Math.floor(diff/60)}dk önce`;
+  return `${Math.floor(diff/3600)}sa önce`;
+}
+
+// ── Views ──
+window.showView = function(v) {
+  currentView = v;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  if (currentView === 'dashboard') renderDashboard();
+  else if (currentView === 'screens') renderScreensView();
+  else if (currentView === 'menus') renderMenusView();
+  else if (currentView === 'payments') renderPaymentsView();
+  else if (currentView === 'customers') renderCustomersView();
+  else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
+}
+
+window.selectShop = function(id) {
+  activeShopId = id;
+  currentView = 'shop';
+  renderShopList();
+  renderCurrentView();
+}
+// ── DASHBOARD ──
+function renderDashboard() {
+  const allScreens = Object.values(screens).flatMap(s => Object.values(s));
+  const online  = allScreens.filter(s => isOnline(s)).length;
+  const offline = allScreens.filter(s => s.lastSeen && !isOnline(s)).length;
+  const unknown = allScreens.filter(s => !s.lastSeen).length;
+  const totalShops = Object.keys(shops).length;
+  const monthlyRev = Object.values(shops).reduce((a,s) => a + (s.fee||0), 0);
+
+  // Ödeme uyarıları
+  const overdueShops = Object.entries(shops).filter(([,s]) => {
+    if (!s.fee) return false;
+    return getPaymentStatus(s).status === 'overdue';
+  });
+  const soonShops = Object.entries(shops).filter(([,s]) => {
+    if (!s.fee) return false;
+    return getPaymentStatus(s).status === 'soon';
+  });
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Sistem genel durumu · Canlı takip</div>
+    </div>
+    <button class="btn btn-primary" onclick="openAddShop()">+ Dükkân Ekle</button>
+  </div>
+
+  ${overdueShops.length > 0 ? `
+  <div style="background:rgba(255,82,82,0.08);border:1px solid rgba(255,82,82,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:24px;">⚠️</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:2px;">${overdueShops.length} dükkânda gecikmiş ödeme</div>
+        <div style="font-size:12px;color:var(--text2);">${overdueShops.map(([,s])=>s.name).join(', ')}</div>
+      </div>
+    </div>
+    <button onclick="showView('payments')" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">İncele →</button>
+  </div>
+  ` : ''}
+
+  ${soonShops.length > 0 ? `
+  <div style="background:rgba(255,171,64,0.08);border:1px solid rgba(255,171,64,0.3);border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:20px;">🔔</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:2px;">${soonShops.length} dükkânın ödeme vadesi yaklaşıyor</div>
+        <div style="font-size:11px;color:var(--text2);">${soonShops.map(([,s])=>s.name).join(', ')}</div>
+      </div>
+    </div>
+    <button onclick="showView('payments')" style="background:rgba(255,171,64,0.15);color:var(--amber);border:1px solid rgba(255,171,64,0.3);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">Hatırlat →</button>
+  </div>
+  ` : ''}
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Toplam Ekran</div>
+      <div class="stat-val blue">${allScreens.length}</div>
+      <div class="stat-sub">${totalShops} dükkân</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Çevrimiçi</div>
+      <div class="stat-val green">${online}</div>
+      <div class="stat-sub">Aktif yayın</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Çevrimdışı</div>
+      <div class="stat-val red">${offline}</div>
+      <div class="stat-sub">Bağlantı kesildi</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aylık Gelir</div>
+      <div class="stat-val amber">${monthlyRev}€</div>
+      <div class="stat-sub">Aktif abonelik</div>
+    </div>
+  </div>
+
+  <div class="section-title">Tüm Ekranlar</div>
+  <div class="screen-grid">
+    ${allScreens.length === 0
+      ? `<div class="empty"><div class="empty-icon">📺</div><div class="empty-title">Ekran yok</div><div class="empty-sub">Dükkân ekleyince ekranlar burada görünür</div></div>`
+      : renderScreenCards(allScreens)}
+  </div>`;
+}
+
+// ── SCREENS VIEW ──
+function renderScreensView() {
+  if (!activeShopId || !shops[activeShopId]) {
+    renderDashboard(); return;
+  }
+  renderShopDetail(activeShopId);
+}
+
+// ── SHOP DETAIL ──
+function renderShopDetail(shopId) {
+  const shop = shops[shopId];
+  if (!shop) return;
+  const shopScreens = screens[shopId] || {};
+  const screenList = Object.entries(shopScreens);
+  const online = screenList.filter(([,s]) => isOnline(s)).length;
+
+  // WhatsApp link (numarayı temizle)
+  const wa = (shop.ownerWhatsapp || '').replace(/[^0-9]/g, '');
+  const waLink = wa ? `https://wa.me/${wa}` : '';
+
+  // Telefon link
+  const phoneLink = shop.ownerPhone ? `tel:${shop.ownerPhone.replace(/\s/g,'')}` : '';
+
+  // E-mail link
+  const emailLink = shop.ownerEmail ? `mailto:${shop.ownerEmail}` : '';
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">${shop.name}</div>
+      <div class="page-sub">${shop.address || '—'} · ${screenList.length} ekran · Aylık ${shop.fee || 0}€</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" onclick="openEditShop('${shopId}')">✏️ Düzenle</button>
+      <button class="btn btn-ghost" onclick="pushToAll('${shopId}')">📤 Tümüne Gönder</button>
+      <button class="btn btn-danger" onclick="deleteShop('${shopId}')">🗑 Sil</button>
+    </div>
+  </div>
+
+  ${(shop.ownerName || shop.ownerEmail || shop.ownerPhone || shop.ownerWhatsapp) ? `
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:.3px;">👤 Dükkân Sahibi</div>
+      ${shop.ownerName ? `<div style="font-size:13px;color:var(--text);font-weight:600;">${shop.ownerName}</div>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+
+      ${shop.ownerEmail ? `
+      <a href="${emailLink}" style="text-decoration:none;">
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='rgba(64,196,255,.3)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-size:18px;">📧</div>
+          <div style="overflow:hidden;">
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;">E-mail</div>
+            <div style="font-size:12px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${shop.ownerEmail}</div>
+          </div>
+        </div>
+      </a>` : ''}
+
+      ${shop.ownerPhone ? `
+      <a href="${phoneLink}" style="text-decoration:none;">
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='rgba(255,171,64,.3)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-size:18px;">📞</div>
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Telefon</div>
+            <div style="font-size:12px;color:var(--text);font-weight:500;">${shop.ownerPhone}</div>
+          </div>
+        </div>
+      </a>` : ''}
+
+      ${shop.ownerWhatsapp ? `
+      <a href="${waLink}" target="_blank" style="text-decoration:none;">
+        <div style="background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:pointer;" onmouseover="this.style.borderColor='rgba(0,230,118,.5)';this.style.background='rgba(0,230,118,0.1)'" onmouseout="this.style.borderColor='rgba(0,230,118,.2)';this.style.background='rgba(0,230,118,0.05)'">
+          <div style="font-size:18px;">💬</div>
+          <div>
+            <div style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:1px;text-transform:uppercase;">WhatsApp</div>
+            <div style="font-size:12px;color:var(--text);font-weight:500;">${shop.ownerWhatsapp}</div>
+          </div>
+        </div>
+      </a>` : ''}
+
+    </div>
+
+    ${(shop.taxId || shop.iban) ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+      ${shop.taxId ? `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:18px;">🧾</div>
+        <div>
+          <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Vergi No</div>
+          <div style="font-size:12px;color:var(--text);font-weight:500;font-family:'DM Mono',monospace;">${shop.taxId}</div>
+        </div>
+      </div>` : ''}
+      ${shop.iban ? `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:18px;">🏦</div>
+        <div>
+          <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;">IBAN</div>
+          <div style="font-size:12px;color:var(--text);font-weight:500;font-family:'DM Mono',monospace;">${shop.iban}</div>
+        </div>
+      </div>` : ''}
+    </div>
+    ` : ''}
+  </div>
+  ` : ''}
+
+  <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card">
+      <div class="stat-label">Çevrimiçi</div>
+      <div class="stat-val green">${online}</div>
+      <div class="stat-sub">/${screenList.length} ekran</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Çevrimdışı</div>
+      <div class="stat-val red">${screenList.length - online}</div>
+      <div class="stat-sub">ekran</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aylık Ücret</div>
+      <div class="stat-val amber">${shop.fee || 0}€</div>
+      <div class="stat-sub" style="color:${(()=>{const p=getPaymentStatus(shop);return p.color;})()};font-weight:600;">${(()=>{const p=getPaymentStatus(shop);return p.label;})()}</div>
+    </div>
+  </div>
+
+  ${shop.fee ? `
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">💰 Bu Ay Ödeme</div>
+      <div style="font-size:13px;color:var(--text);">
+        Son ödeme: <strong>${shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') + (shop.lastPaidMethod === 'cash' ? ' · 💵 Nakit' : shop.lastPaidMethod === 'bank' ? ' · 🏦 Banka' : '') : '—'}</strong>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="markPaid('${shopId}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 Nakit Ödendi</button>
+      <button onclick="markPaid('${shopId}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 Banka Ödendi</button>
+    </div>
+  </div>
+  ` : ''}
+
+  <div class="section-title">Ekranlar</div>
+  <div class="screen-grid">
+    ${screenList.map(([sid, screen]) => renderScreenCard(sid, screen, shopId)).join('')}
+    <div class="screen-card" style="border-style:dashed;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:200px;" onclick="addScreen('${shopId}')">
+      <div style="text-align:center;color:var(--muted);">
+        <div style="font-size:28px;margin-bottom:8px;">＋</div>
+        <div style="font-size:13px;font-weight:600;">Ekran Ekle</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderScreenCard(sid, screen, shopId) {
+  const st = getStatus(screen);
+  const scheduleActive = screen.scheduleEnabled;
+  const scheduleHasMenu = screen.scheduleMorningUrl || screen.scheduleNoonUrl || screen.scheduleEveningUrl;
+
+  return `
+  <div class="screen-card ${st}">
+    <div class="screen-header">
+      <div>
+        <div class="screen-name">${screen.name || 'Ekran'}</div>
+        <div class="screen-id">${sid}</div>
+      </div>
+      <div class="status-pill ${st}">
+        <div class="status-dot ${st}"></div>
+        ${statusLabel(st)}
+      </div>
+    </div>
+    <div class="screen-meta">
+      <div class="meta-item">
+        <div class="meta-key">Son Görülme</div>
+        <div class="meta-val" style="font-size:11px;">${timeAgo(screen.lastSeen)}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-key">Durum</div>
+        <div class="meta-val" style="color:${st==='online'?'var(--green)':st==='offline'?'var(--red)':'var(--amber)'}">
+          ${statusLabel(st)}
+        </div>
+      </div>
+    </div>
+    <div class="screen-menu">
+      <div class="menu-label">Aktif Menü</div>
+      <div class="menu-name">${screen.menuName || 'Menü yüklenmedi'}</div>
+      <div class="menu-updated">${screen.menuUrl ? '🔗 URL mevcut' : '⚠️ URL yok'}</div>
+      ${scheduleActive ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(0,230,118,0.2);font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:5px;">
+          <span>🕐</span><span>Zaman bazlı menü AKTİF</span>
+        </div>
+      ` : scheduleHasMenu ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--dim);font-size:10px;color:var(--text2);display:flex;align-items:center;gap:5px;">
+          <span>🕐</span><span>Zaman ayarlı (kapalı)</span>
+        </div>
+      ` : ''}
+    </div>
+    <div class="screen-actions">
+      <button class="screen-btn push" onclick="openPush('${shopId}','${sid}')">📤 Menü</button>
+      <button class="screen-btn restart" onclick="openScheduleModal('${shopId}','${sid}')" style="background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.2);">⏰ Zaman</button>
+      <button class="screen-btn restart" onclick="pingScreen('${shopId}','${sid}')">🔄</button>
+    </div>
+  </div>`;
+}
+
+function renderScreenCards(screenArr) {
+  return screenArr.map(s => {
+    const st = getStatus(s);
+    return `
+    <div class="screen-card ${st}">
+      <div class="screen-header">
+        <div>
+          <div class="screen-name">${s.name || 'Ekran'}</div>
+          <div class="screen-id">${s.shopId || ''}</div>
+        </div>
+        <div class="status-pill ${st}">
+          <div class="status-dot ${st}"></div>
+          ${statusLabel(st)}
+        </div>
+      </div>
+      <div class="screen-meta">
+        <div class="meta-item">
+          <div class="meta-key">Son Görülme</div>
+          <div class="meta-val" style="font-size:11px;">${timeAgo(s.lastSeen)}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-key">Menü</div>
+          <div class="meta-val" style="font-size:11px;">${s.menuName || '—'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MENUS VIEW ──
+function renderMenusView() {
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Menü Yönetimi</div>
+      <div class="page-sub">Menü URL'lerini yönet ve ekranlara gönder</div>
+    </div>
+  </div>
+  <div class="menu-manager">
+    <div class="section-title">Hızlı Menü Gönder</div>
+    <div class="menu-grid">
+      <div class="menu-field">
+        <div class="field-label">Dükkân Seç</div>
+        <select class="field-input" id="quickShop">
+          ${Object.entries(shops).map(([id,s]) => `<option value="${id}">${s.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="menu-field">
+        <div class="field-label">Menü Adı</div>
+        <input class="field-input" id="quickMenuName" placeholder="Örn: Pasta & Salat Menüsü">
+      </div>
+    </div>
+    <div class="menu-field" style="margin-top:12px;">
+      <div class="field-label">Menü URL (HTML dosyası)</div>
+      <input class="field-input" id="quickMenuUrl" placeholder="https://... veya netlify linki">
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="quickPushAll()">📤 Tüm Ekranlara Gönder</button>
+    </div>
+  </div>`;
+}
+
+// ── PAYMENTS VIEW ──
+function getPaymentStatus(shop) {
+  // Ödeme durumu hesapla
+  const lastPaid = shop.lastPaidAt ? new Date(shop.lastPaidAt) : null;
+  const startDate = shop.createdAt ? new Date(shop.createdAt) : new Date();
+  const today = new Date();
+
+  // Son ödeme yoksa: ilk fatura tarihi = oluşturulma + 30 gün
+  // Son ödeme varsa: bir sonraki tarih = son ödeme + 30 gün
+  let nextDueDate;
+  if (lastPaid) {
+    nextDueDate = new Date(lastPaid.getTime() + 30 * 24 * 60 * 60 * 1000);
+  } else {
+    nextDueDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  }
+
+  const daysUntilDue = Math.floor((nextDueDate - today) / (24 * 60 * 60 * 1000));
+
+  let status, color, label;
+  if (daysUntilDue < 0) {
+    status = 'overdue';
+    color = 'var(--red)';
+    label = `${Math.abs(daysUntilDue)} gün gecikti`;
+  } else if (daysUntilDue <= 3) {
+    status = 'soon';
+    color = 'var(--amber)';
+    label = daysUntilDue === 0 ? 'Bugün' : `${daysUntilDue} gün kaldı`;
+  } else {
+    status = 'ok';
+    color = 'var(--green)';
+    label = `${daysUntilDue} gün kaldı`;
+  }
+
+  return { status, color, label, nextDueDate, daysUntilDue };
+}
+
+// ── MÜŞTERİLER VIEW ──
+function renderCustomersView() {
+  const shopList = Object.entries(shops);
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">👥 Müşteriler</div>
+      <div class="page-sub">Tüm müşteri bilgileri · Düzenle · Yeni ekle</div>
+    </div>
+    <button class="btn btn-primary" onclick="openAddShop()">+ Yeni Müşteri</button>
+  </div>
+
+  ${shopList.length === 0 ? `
+    <div class="empty">
+      <div class="empty-icon">👥</div>
+      <div class="empty-title">Henüz müşteri yok</div>
+      <div class="empty-sub">Sağ üstten yeni müşteri ekleyebilirsin</div>
+    </div>
+  ` : `
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    ${shopList.map(([id, shop]) => {
+      const shopScreens = screens[id] || {};
+      const screenCount = Object.keys(shopScreens).length;
+      const online = Object.values(shopScreens).filter(s => isOnline(s)).length;
+      const pay = getPaymentStatus(shop);
+      const wa = (shop.ownerWhatsapp || shop.ownerPhone || '').replace(/[^0-9]/g, '');
+      const waLink = wa ? `https://wa.me/${wa}` : '';
+
+      return `
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px 24px;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(255,255,255,.1)'" onmouseout="this.style.borderColor='var(--border)'">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+
+          <!-- Sol: Dükkân + Sahip -->
+          <div style="flex:1;min-width:200px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <div style="font-size:16px;font-weight:700;color:var(--text);">${shop.name}</div>
+              <div style="font-size:10px;padding:2px 8px;border-radius:10px;background:${pay.status==='overdue'?'rgba(255,82,82,0.15)':pay.status==='soon'?'rgba(255,171,64,0.15)':'rgba(0,230,118,0.1)'};color:${pay.color};font-weight:700;">${pay.label}</div>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">${shop.address || '—'}</div>
+
+            ${shop.ownerName ? `
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">👤 ${shop.ownerName}</div>
+            ` : ''}
+
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${shop.ownerEmail ? `
+              <a href="mailto:${shop.ownerEmail}" style="text-decoration:none;display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);transition:all .2s;" onmouseover="this.style.borderColor='rgba(64,196,255,.3)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                📧 ${shop.ownerEmail}
+              </a>` : ''}
+              ${shop.ownerPhone ? `
+              <a href="tel:${shop.ownerPhone}" style="text-decoration:none;display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);transition:all .2s;" onmouseover="this.style.borderColor='rgba(255,171,64,.3)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                📞 ${shop.ownerPhone}
+              </a>` : ''}
+              ${wa ? `
+              <a href="${waLink}" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:5px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,.2);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--green);transition:all .2s;" onmouseover="this.style.background='rgba(0,230,118,0.12)'" onmouseout="this.style.background='rgba(0,230,118,0.05)'">
+                💬 WhatsApp
+              </a>` : ''}
+            </div>
+
+            ${(shop.taxId || shop.iban) ? `
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+              ${shop.taxId ? `<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;">🧾 ${shop.taxId}</div>` : ''}
+              ${shop.iban ? `<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;">🏦 ${shop.iban}</div>` : ''}
+            </div>
+            ` : ''}
+          </div>
+
+          <!-- Orta: İstatistikler -->
+          <div style="display:flex;gap:12px;flex-shrink:0;">
+            <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
+              <div style="font-size:22px;font-weight:700;color:var(--blue);">${screenCount}</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Ekran</div>
+            </div>
+            <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
+              <div style="font-size:22px;font-weight:700;color:var(--green);">${online}</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Online</div>
+            </div>
+            <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
+              <div style="font-size:22px;font-weight:700;color:var(--amber);">${shop.fee || 0}€</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">/Ay</div>
+            </div>
+          </div>
+
+          <!-- Sağ: Butonlar -->
+          <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+            <button onclick="openEditShop('${id}')" style="background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">✏️ Düzenle</button>
+            <button onclick="selectShop('${id}')" style="background:rgba(0,230,118,0.08);color:var(--green);border:1px solid rgba(0,230,118,.2);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">📺 Ekranlar</button>
+            <button onclick="deleteShop('${id}')" style="background:rgba(255,82,82,0.08);color:var(--red);border:1px solid rgba(255,82,82,.2);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">🗑 Sil</button>
+          </div>
+
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  `}
+  `;
+}
+
+function renderPaymentsView() {
+  const shopList = Object.entries(shops);
+  const today = new Date();
+
+  // Hesaplamalar
+  let totalExpected = 0, totalPaidThisMonth = 0, totalOverdue = 0, overdueCount = 0;
+
+  const shopRows = shopList.map(([id, shop]) => {
+    const fee = shop.fee || 0;
+    const pay = getPaymentStatus(shop);
+    totalExpected += fee;
+
+    if (pay.status === 'overdue') {
+      totalOverdue += fee;
+      overdueCount++;
+    }
+
+    // Bu ay ödenmiş mi?
+    if (shop.lastPaidAt) {
+      const lp = new Date(shop.lastPaidAt);
+      if (lp.getMonth() === today.getMonth() && lp.getFullYear() === today.getFullYear()) {
+        totalPaidThisMonth += fee;
+      }
+    }
+
+    return { id, shop, pay, fee };
+  });
+
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">💰 Ödemeler</div>
+      <div class="page-sub">Abonelik takibi · Hatırlatmalar · Geçmiş</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Aylık Beklenen</div>
+      <div class="stat-val blue">${totalExpected}€</div>
+      <div class="stat-sub">${shopList.length} dükkân</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bu Ay Ödendi</div>
+      <div class="stat-val green">${totalPaidThisMonth}€</div>
+      <div class="stat-sub">${shopList.filter(([,s]) => {
+        if (!s.lastPaidAt) return false;
+        const lp = new Date(s.lastPaidAt);
+        return lp.getMonth() === today.getMonth() && lp.getFullYear() === today.getFullYear();
+      }).length} dükkân</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bekleyen</div>
+      <div class="stat-val amber">${totalExpected - totalPaidThisMonth - totalOverdue}€</div>
+      <div class="stat-sub">tahsil edilecek</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Gecikmiş</div>
+      <div class="stat-val red">${totalOverdue}€</div>
+      <div class="stat-sub">${overdueCount} dükkân</div>
+    </div>
+  </div>
+
+  <div class="section-title">Dükkân Ödeme Durumları</div>
+
+  ${shopList.length === 0 ? `
+    <div class="empty">
+      <div class="empty-icon">💰</div>
+      <div class="empty-title">Henüz dükkân yok</div>
+      <div class="empty-sub">Dükkân ekleyince ödeme takibi burada görünür</div>
+    </div>
+  ` : `
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${shopRows.map(({id, shop, pay, fee}) => {
+        const wa = (shop.ownerWhatsapp || '').replace(/[^0-9]/g, '');
+        const dueText = pay.nextDueDate.toLocaleDateString('tr-TR');
+        const lastPaidText = shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') : '—';
+        const lastMethod = shop.lastPaidMethod || '';
+
+        // WhatsApp hatırlatma mesajı
+        let waMsg;
+        if (pay.status === 'overdue') {
+          waMsg = `Merhaba ${shop.ownerName || ''}, abonelik ödemeniz (${fee}€) ${Math.abs(pay.daysUntilDue)} gün gecikti. Lütfen ödemenizi yapın. Teşekkürler · SignageOS`;
+        } else if (pay.status === 'soon') {
+          waMsg = `Merhaba ${shop.ownerName || ''}, abonelik ödemeniz (${fee}€) ${pay.daysUntilDue === 0 ? 'bugün' : pay.daysUntilDue + ' gün sonra'} vadesi dolmaktadır. Bilginize · SignageOS`;
+        } else {
+          waMsg = `Merhaba ${shop.ownerName || ''}, abonelik durumunuz hakkında bilgi · SignageOS`;
+        }
+        const waLink = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(waMsg)}` : '';
+
+        return `
+        <div style="background:var(--s1);border:1px solid var(--border);border-left:4px solid ${pay.color};border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1.5fr 1.8fr;gap:14px;align-items:center;">
+
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">${shop.name}</div>
+            <div style="font-size:11px;color:var(--text2);">${shop.ownerName || '—'} · ${shop.address || '—'}</div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Aylık Ücret</div>
+            <div style="font-size:18px;font-weight:700;color:var(--amber);">${fee}€</div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Son Ödeme</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">${lastPaidText}</div>
+            ${lastMethod ? `<div style="font-size:10px;color:var(--text2);margin-top:1px;">${lastMethod === 'cash' ? '💵 Nakit' : '🏦 Banka'}</div>` : ''}
+          </div>
+
+          <div>
+            <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Sonraki Vade</div>
+            <div style="font-size:12px;font-weight:600;color:${pay.color};">${dueText}</div>
+            <div style="font-size:11px;color:${pay.color};font-weight:500;">${pay.label}</div>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+            <button onclick="markPaid('${id}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 Nakit Ödendi</button>
+            <button onclick="markPaid('${id}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 Banka Ödendi</button>
+            ${waLink ? `<a href="${waLink}" target="_blank" style="text-decoration:none;"><button style="background:rgba(0,230,118,0.05);color:var(--green);border:1px solid rgba(0,230,118,0.2);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💬 Hatırlat</button></a>` : ''}
+          </div>
+
+        </div>`;
+      }).join('')}
+    </div>
+  `}
+  `;
+}
+
+// ── ÖDEME İŞARETLE ──
+window.markPaid = async function(shopId, method) {
+  const shop = shops[shopId];
+  if (!shop) return;
+
+  const methodText = method === 'cash' ? 'Nakit' : 'Banka';
+  if (!confirm(`${shop.name} için ${shop.fee}€ ${methodText} ödemesi alındı olarak işaretlensin mi?`)) return;
+
+  // Ödeme geçmişine ekle
+  const paymentId = 'pay_' + Date.now();
+  await set(ref(db, `payments/${shopId}/${paymentId}`), {
+    amount: shop.fee || 0,
+    method: method,
+    paidAt: Date.now(),
+    note: ''
+  });
+
+  // Dükkâna son ödeme tarihini güncelle
+  await update(ref(db, `shops/${shopId}`), {
+    lastPaidAt: Date.now(),
+    lastPaidMethod: method
+  });
+
+  showToast(`✓ ${shop.name} · ${shop.fee}€ ${methodText} ödendi`, 'success');
+}
+
+// ── ZAMAN BAZLI MENÜ (EKRAN BAZLI) ──
+let activeScheduleScreen = null; // {shopId, screenId}
+let scheduleEnabledTemp = false;
+
+window.openScheduleModal = function(shopId, screenId) {
+  const screen = screens[shopId]?.[screenId];
+  if (!screen) return;
+  activeScheduleScreen = { shopId, screenId };
+
+  document.getElementById('scheduleModalSub').textContent = `${screen.name || screenId} için zaman bazlı menü ayarı`;
+
+  // Mevcut değerleri yükle
+  document.getElementById('sched_morning_start').value = screen.scheduleMorningStart || '07:00';
+  document.getElementById('sched_morning_end').value   = screen.scheduleMorningEnd   || '11:00';
+  document.getElementById('sched_morning_url').value   = screen.scheduleMorningUrl   || '';
+
+  document.getElementById('sched_noon_start').value    = screen.scheduleNoonStart    || '11:00';
+  document.getElementById('sched_noon_end').value      = screen.scheduleNoonEnd      || '16:00';
+  document.getElementById('sched_noon_url').value      = screen.scheduleNoonUrl      || '';
+
+  document.getElementById('sched_evening_start').value = screen.scheduleEveningStart || '16:00';
+  document.getElementById('sched_evening_end').value   = screen.scheduleEveningEnd   || '23:00';
+  document.getElementById('sched_evening_url').value   = screen.scheduleEveningUrl   || '';
+
+  // Toggle durumu
+  scheduleEnabledTemp = !!screen.scheduleEnabled;
+  updateScheduleToggleUI();
+
+  document.getElementById('scheduleModal').classList.add('open');
+}
+
+function updateScheduleToggleUI() {
+  const toggle = document.getElementById('scheduleToggle');
+  const handle = document.getElementById('scheduleToggleHandle');
+  if (scheduleEnabledTemp) {
+    toggle.style.background = 'var(--green)';
+    handle.style.left = '22px';
+  } else {
+    toggle.style.background = 'var(--dim)';
+    handle.style.left = '2px';
+  }
+}
+
+window.toggleScreenSchedule = function() {
+  scheduleEnabledTemp = !scheduleEnabledTemp;
+  updateScheduleToggleUI();
+}
+
+window.saveScreenSchedule = async function() {
+  if (!activeScheduleScreen) return;
+  const { shopId, screenId } = activeScheduleScreen;
+
+  const data = {
+    scheduleEnabled:      scheduleEnabledTemp,
+    scheduleMorningStart: document.getElementById('sched_morning_start').value,
+    scheduleMorningEnd:   document.getElementById('sched_morning_end').value,
+    scheduleMorningUrl:   document.getElementById('sched_morning_url').value.trim(),
+    scheduleNoonStart:    document.getElementById('sched_noon_start').value,
+    scheduleNoonEnd:      document.getElementById('sched_noon_end').value,
+    scheduleNoonUrl:      document.getElementById('sched_noon_url').value.trim(),
+    scheduleEveningStart: document.getElementById('sched_evening_start').value,
+    scheduleEveningEnd:   document.getElementById('sched_evening_end').value,
+    scheduleEveningUrl:   document.getElementById('sched_evening_url').value.trim(),
+  };
+
+  await update(ref(db, `screens/${shopId}/${screenId}`), data);
+  closeModal('scheduleModal');
+  showToast(`💾 Zaman ayarları kaydedildi · ${scheduleEnabledTemp ? 'AKTİF' : 'kapalı'}`, 'success');
+}
+
+window.uploadScreenScheduleMenu = function(slot) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,video/*,.html';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    showToast('⏳ Yükleniyor: ' + file.name, 'success');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('resource_type', 'auto');
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      const url = data.secure_url;
+
+      document.getElementById(`sched_${slot}_url`).value = url;
+      showToast('✓ Yüklendi · Kaydet butonuna basmayı unutma', 'success');
+    } catch(err) {
+      showToast('⚠️ Yükleme başarısız', 'error');
+    }
+  };
+  input.click();
+}
+
+// ── ADD SHOP ──
+window.selectPlan = function(card) {
+  // Tüm kartları sıfırla
+  document.querySelectorAll('.plan-card').forEach(c => {
+    c.style.background = 'var(--s2)';
+    c.style.borderColor = 'var(--border)';
+  });
+  // Seçilen kartı vurgula
+  card.style.background = 'rgba(0,230,118,0.06)';
+  card.style.borderColor = 'rgba(0,230,118,0.4)';
+  // Sadece ekran sayısını doldur, fiyata dokunma (sen elle gir)
+  document.getElementById('newShopScreens').value = card.dataset.screens;
+  document.getElementById('newShopFee').focus();
+}
+
+// State - şu an düzenlenen dükkân
+let editingShopId = null;
+
+window.openAddShop = function() {
+  editingShopId = null;
+  document.getElementById('shopModalTitle').textContent = 'Yeni Dükkân Ekle';
+  document.getElementById('shopModalSub').textContent = 'Dükkân bilgilerini girin, ekranlar otomatik oluşturulur';
+  document.getElementById('shopSaveBtn').textContent = '✓ Ekle';
+
+  // Tüm alanları temizle
+  document.getElementById('newShopName').value = '';
+  document.getElementById('newShopAddr').value = '';
+  document.getElementById('newShopOwner').value = '';
+  document.getElementById('newShopEmail').value = '';
+  document.getElementById('newShopPhone').value = '';
+  document.getElementById('newShopWhatsapp').value = '';
+  document.getElementById('newShopTaxId').value = '';
+  document.getElementById('newShopIban').value = '';
+  document.getElementById('newShopScreens').value = '7';
+  document.getElementById('newShopFee').value = '';
+
+  document.getElementById('addShopModal').classList.add('open');
+}
+
+window.openEditShop = function(shopId) {
+  const shop = shops[shopId];
+  if (!shop) return;
+
+  editingShopId = shopId;
+  document.getElementById('shopModalTitle').textContent = '✏️ Dükkân Düzenle';
+  document.getElementById('shopModalSub').textContent = `${shop.name} bilgilerini güncelle`;
+  document.getElementById('shopSaveBtn').textContent = '💾 Kaydet';
+
+  // Mevcut bilgileri doldur
+  document.getElementById('newShopName').value = shop.name || '';
+  document.getElementById('newShopAddr').value = shop.address || '';
+  document.getElementById('newShopOwner').value = shop.ownerName || '';
+  document.getElementById('newShopEmail').value = shop.ownerEmail || '';
+  document.getElementById('newShopPhone').value = shop.ownerPhone || '';
+  document.getElementById('newShopWhatsapp').value = shop.ownerWhatsapp || '';
+  document.getElementById('newShopTaxId').value    = shop.taxId || '';
+  document.getElementById('newShopIban').value     = shop.iban || '';
+  const currentScreens = Object.keys(screens[shopId] || {}).length;
+  document.getElementById('newShopScreens').value = currentScreens || 1;
+  document.getElementById('newShopFee').value = shop.fee || '';
+
+  document.getElementById('addShopModal').classList.add('open');
+}
+
+window.addShop = async function() {
+  const name      = document.getElementById('newShopName').value.trim();
+  const addr      = document.getElementById('newShopAddr').value.trim();
+  const owner     = document.getElementById('newShopOwner').value.trim();
+  const email     = document.getElementById('newShopEmail').value.trim();
+  const phone     = document.getElementById('newShopPhone').value.trim();
+  const whatsapp  = document.getElementById('newShopWhatsapp').value.trim();
+  const taxId     = document.getElementById('newShopTaxId').value.trim();
+  const iban      = document.getElementById('newShopIban').value.trim();
+  const screens_  = parseInt(document.getElementById('newShopScreens').value) || 1;
+  const fee       = parseInt(document.getElementById('newShopFee').value) || 0;
+
+  if (!name) { showToast('Dükkân adı boş olamaz', 'error'); return; }
+
+  // DÜZENLEME MODU
+  if (editingShopId) {
+    const oldScreens = Object.keys(screens[editingShopId] || {}).length;
+
+    await update(ref(db, `shops/${editingShopId}`), {
+      name, address: addr, fee,
+      ownerName: owner, ownerEmail: email,
+      ownerPhone: phone, ownerWhatsapp: whatsapp,
+      taxId, iban,
+      updatedAt: Date.now()
+    });
+
+    // Ekran sayısı değişmişse - manuel onay
+    if (screens_ > oldScreens) {
+      const diff = screens_ - oldScreens;
+      if (confirm(`${diff} yeni ekran eklenecek. Onaylıyor musun?`)) {
+        for (let i = oldScreens + 1; i <= screens_; i++) {
+          await set(ref(db, `screens/${editingShopId}/screen_${i}`), {
+            name: `Ekran ${i}`, shopId: editingShopId, menuUrl: '', menuName: 'Menü yüklenmedi',
+            lastSeen: null, online: false, createdAt: Date.now()
+          });
+        }
+        showToast(`✓ ${diff} yeni ekran eklendi · Aylık ücreti güncellemeyi unutma!`, 'success');
+      }
+    } else if (screens_ < oldScreens) {
+      const diff = oldScreens - screens_;
+      if (confirm(`${diff} ekran silinecek (en sondakiler). Emin misin?`)) {
+        const screenIds = Object.keys(screens[editingShopId] || {}).sort();
+        for (let i = screens_; i < oldScreens; i++) {
+          await remove(ref(db, `screens/${editingShopId}/${screenIds[i]}`));
+        }
+        showToast(`✓ ${diff} ekran silindi`, 'success');
+      }
+    }
+
+    closeModal('addShopModal');
+    showToast(`💾 ${name} güncellendi`, 'success');
+    editingShopId = null;
+    return;
+  }
+
+  // YENİ EKLEME MODU
+  const shopId = 'shop_' + Date.now();
+  await set(ref(db, `shops/${shopId}`), {
+    name, address: addr, fee,
+    ownerName: owner, ownerEmail: email,
+    ownerPhone: phone, ownerWhatsapp: whatsapp,
+    taxId, iban,
+    createdAt: Date.now(), active: true
+  });
+
+  for (let i = 1; i <= screens_; i++) {
+    await set(ref(db, `screens/${shopId}/screen_${i}`), {
+      name: `Ekran ${i}`, shopId, menuUrl: '', menuName: 'Menü yüklenmedi',
+      lastSeen: null, online: false, createdAt: Date.now()
+    });
+  }
+
+  closeModal('addShopModal');
+  activeShopId = shopId;
+  showToast(`✓ ${name} eklendi`, 'success');
+}
+
+// ── PUSH MENU ──
+window.openPush = function(shopId, screenId) {
+  pushTargetScreenId = { shopId, screenId };
+  const screen = screens[shopId]?.[screenId];
+  document.getElementById('pushModalSub').textContent = `Hedef: ${screen?.name || screenId}`;
+  document.getElementById('pushMenuUrl').value = screen?.menuUrl || '';
+  document.getElementById('pushScreenName').value = screen?.name || '';
+  document.getElementById('pushMenuModal').classList.add('open');
+}
+
+window.confirmPush = async function() {
+  const url  = document.getElementById('pushMenuUrl').value.trim();
+  const name = document.getElementById('pushScreenName').value.trim();
+  if (!url) { showToast('URL boş olamaz', 'error'); return; }
+
+  const { shopId, screenId } = pushTargetScreenId;
+  await update(ref(db, `screens/${shopId}/${screenId}`), {
+    menuUrl: url,
+    menuName: name || 'Menü',
+    updatedAt: Date.now()
+  });
+  closeModal('pushMenuModal');
+  showToast('✓ Menü gönderildi', 'success');
+}
+
+window.pushToAll = function(shopId) {
+  pushTargetScreenId = { shopId, screenId: '__all__' };
+  document.getElementById('pushModalSub').textContent = `Hedef: ${shops[shopId]?.name} — TÜM EKRANLAR`;
+  document.getElementById('pushMenuUrl').value = '';
+  document.getElementById('pushMenuModal').classList.add('open');
+  window.confirmPush = async function() {
+    const url = document.getElementById('pushMenuUrl').value.trim();
+    const name = document.getElementById('pushScreenName').value.trim();
+    if (!url) { showToast('URL boş olamaz', 'error'); return; }
+    const shopScreens = screens[shopId] || {};
+    for (const sid of Object.keys(shopScreens)) {
+      await update(ref(db, `screens/${shopId}/${sid}`), { menuUrl: url, menuName: name || 'Menü', updatedAt: Date.now() });
+    }
+    closeModal('pushMenuModal');
+    showToast(`✓ Tüm ekranlara gönderildi`, 'success');
+  };
+}
+
+window.quickPushAll = async function() {
+  const shopId  = document.getElementById('quickShop').value;
+  const url     = document.getElementById('quickMenuUrl').value.trim();
+  const name    = document.getElementById('quickMenuName').value.trim();
+  if (!url) { showToast('URL boş olamaz', 'error'); return; }
+  const shopScreens = screens[shopId] || {};
+  for (const sid of Object.keys(shopScreens)) {
+    await update(ref(db, `screens/${shopId}/${sid}`), { menuUrl: url, menuName: name || 'Menü', updatedAt: Date.now() });
+  }
+  showToast('✓ Tüm ekranlara gönderildi', 'success');
+}
+
+// ── ADD SCREEN ──
+window.addScreen = async function(shopId) {
+  const shopScreens = screens[shopId] || {};
+  const n = Object.keys(shopScreens).length + 1;
+  const sid = 'screen_' + Date.now();
+  await set(ref(db, `screens/${shopId}/${sid}`), {
+    name: `Ekran ${n}`, shopId, menuUrl: '', menuName: 'Menü yüklenmedi',
+    lastSeen: null, online: false, createdAt: Date.now()
+  });
+  showToast('✓ Ekran eklendi', 'success');
+}
+
+// ── PING / RESTART ──
+window.pingScreen = async function(shopId, screenId) {
+  if (!confirm('Bu ekran yeniden başlatılacak. Emin misin?\n\n(Ekran 5 saniye içinde restart olacak)')) return;
+  
+  await update(ref(db, `screens/${shopId}/${screenId}`), { 
+    restartRequest: Date.now(),
+    pingRequest: Date.now()
+  });
+  showToast('🔄 Restart komutu gönderildi', 'success');
+}
+
+// Tüm ekranları aynı anda restart et
+window.restartAllScreens = async function(shopId) {
+  if (!confirm(`${shops[shopId]?.name} dükkânındaki TÜM ekranlar yeniden başlatılacak. Emin misin?`)) return;
+  
+  const shopScreens = screens[shopId] || {};
+  const restartTime = Date.now();
+  
+  for (const sid of Object.keys(shopScreens)) {
+    await update(ref(db, `screens/${shopId}/${sid}`), { 
+      restartRequest: restartTime,
+      pingRequest: restartTime
+    });
+  }
+  showToast(`🔄 ${Object.keys(shopScreens).length} ekran restart ediliyor`, 'success');
+}
+
+// ── DELETE SHOP ──
+window.deleteShop = async function(shopId) {
+  if (!confirm(`${shops[shopId]?.name} silinecek. Emin misin?`)) return;
+  await remove(ref(db, `shops/${shopId}`));
+  await remove(ref(db, `screens/${shopId}`));
+  activeShopId = null;
+  currentView = 'dashboard';
+  showToast('🗑 Dükkân silindi', 'success');
+}
+
+// ── MODAL ──
+window.closeModal = function(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ── TOAST ──
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+window.showToast = showToast;
+
+// ── CLOUDINARY UPLOAD ──
+const CLOUD_NAME = 'dovyxuyhe';
+const UPLOAD_PRESET = 'ml_default';
+
+window.handleDrop = function(e) {
+  e.preventDefault();
+  const dz = document.getElementById('dropZone');
+  dz.style.borderColor = 'var(--dim)';
+  dz.style.background = 'var(--s2)';
+  const file = e.dataTransfer.files[0];
+  if (file) uploadToCloudinary(file);
+}
+
+window.handleFileSelect = function(file) {
+  if (file) uploadToCloudinary(file);
+}
+
+async function uploadToCloudinary(file) {
+  const prog = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadBar');
+  const pct = document.getElementById('uploadPercent');
+  const icon = document.getElementById('dropIcon');
+  const txt = document.getElementById('dropText');
+  const sendBtn = document.getElementById('pushSendBtn');
+
+  // UI güncelle
+  prog.style.display = 'block';
+  icon.textContent = '⏳';
+  txt.textContent = file.name;
+  sendBtn.disabled = true;
+  sendBtn.textContent = '⏳ Yükleniyor...';
+
+  // Dosya türüne göre resource_type belirle
+  let resourceType = 'auto';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('resource_type', resourceType);
+
+  try {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        bar.style.width = percent + '%';
+        pct.textContent = percent + '%';
+      }
+    };
+
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        const url = res.secure_url;
+
+        // Video ise video wrapper URL oluştur
+        let finalUrl = url;
+        if (file.type.startsWith('video/')) {
+          // Video dosyasını direkt iframe'de oynatmak için wrapper
+          finalUrl = url;
+        }
+
+        document.getElementById('pushMenuUrl').value = finalUrl;
+        document.getElementById('pushScreenName').value = file.name.replace(/\.[^.]+$/, '');
+
+        icon.textContent = '✅';
+        txt.textContent = 'Yüklendi: ' + file.name;
+        sendBtn.disabled = false;
+        sendBtn.textContent = '📤 Gönder';
+        showToast('✓ Dosya yüklendi', 'success');
+      } else {
+        throw new Error('Yükleme başarısız: ' + xhr.status);
+      }
+    };
+
+    xhr.onerror = function() {
+      icon.textContent = '❌';
+      txt.textContent = 'Hata! Tekrar dene.';
+      sendBtn.disabled = false;
+      sendBtn.textContent = '📤 Gönder';
+      showToast('⚠️ Yükleme başarısız', 'error');
+    };
+
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`);
+    xhr.send(formData);
+
+  } catch(err) {
+    icon.textContent = '❌';
+    txt.textContent = 'Hata: ' + err.message;
+    sendBtn.disabled = false;
+    sendBtn.textContent = '📤 Gönder';
+    showToast('⚠️ ' + err.message, 'error');
+  }
+}
+
+// ── INIT ──
+await initDemo();
+renderDashboard();
+
+</script>
+</body>
+</html>
