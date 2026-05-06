@@ -522,47 +522,66 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
 
 <!-- PUSH MENU MODAL -->
 <div class="modal-overlay" id="pushMenuModal">
-  <div class="modal" style="width:560px;">
+  <div class="modal" style="width:580px;max-height:90vh;overflow-y:auto;">
     <div class="modal-title">📤 Menü Gönder</div>
     <div class="modal-sub" id="pushModalSub">Ekrana menü gönderilecek</div>
 
-    <!-- DROPZONE -->
-    <div id="dropZone" style="
-      border:2px dashed var(--dim); border-radius:12px;
-      padding:40px 20px; text-align:center; cursor:pointer;
-      transition:all .3s; margin:16px 0; background:var(--s2);
-    " ondragover="event.preventDefault();this.style.borderColor='var(--green)';this.style.background='rgba(0,230,118,0.05)'"
-      ondragleave="this.style.borderColor='var(--dim)';this.style.background='var(--s2)'"
-      ondrop="handleDrop(event)"
-      onclick="document.getElementById('fileInput').click()">
-      <div id="dropIcon" style="font-size:36px;margin-bottom:10px;">📁</div>
-      <div id="dropText" style="font-size:14px;font-weight:600;color:var(--text);">Dosyayı buraya sürükle bırak</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:6px;">JPG, PNG, MP4, HTML · veya tıkla</div>
+    <!-- SEKME BUTONLARI -->
+    <div style="display:flex;gap:8px;margin:16px 0 0 0;">
+      <button id="tabSingle" onclick="switchPushTab('single')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--green);background:rgba(0,230,118,0.1);color:var(--green);font-size:13px;font-weight:600;cursor:pointer;">🎬 Tek Menü</button>
+      <button id="tabSlide" onclick="switchPushTab('slide')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--dim);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;">🎞️ Slayt Gösterisi</button>
     </div>
-    <input type="file" id="fileInput" accept="image/*,video/*,.html" style="display:none" onchange="handleFileSelect(this.files[0])">
 
-    <!-- UPLOAD PROGRESS -->
-    <div id="uploadProgress" style="display:none;margin:12px 0;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-size:12px;font-weight:600;color:var(--text2);">Yükleniyor...</span>
-        <span id="uploadPercent" style="font-size:12px;font-weight:700;color:var(--green);">0%</span>
+    <!-- TEK MENÜ SEKMESİ -->
+    <div id="tabSingleContent">
+      <div id="dropZone" style="
+        border:2px dashed var(--dim); border-radius:12px;
+        padding:40px 20px; text-align:center; cursor:pointer;
+        transition:all .3s; margin:16px 0; background:var(--s2);
+      " ondragover="event.preventDefault();this.style.borderColor='var(--green)';this.style.background='rgba(0,230,118,0.05)'"
+        ondragleave="this.style.borderColor='var(--dim)';this.style.background='var(--s2)'"
+        ondrop="handleDrop(event)"
+        onclick="document.getElementById('fileInput').click()">
+        <div id="dropIcon" style="font-size:36px;margin-bottom:10px;">📁</div>
+        <div id="dropText" style="font-size:14px;font-weight:600;color:var(--text);">Dosyayı buraya sürükle bırak</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;">JPG, PNG, MP4, HTML · veya tıkla</div>
       </div>
-      <div style="background:var(--dim);border-radius:4px;height:6px;overflow:hidden;">
-        <div id="uploadBar" style="background:var(--green);height:100%;width:0%;transition:width .3s;border-radius:4px;"></div>
+      <input type="file" id="fileInput" accept="image/*,video/*,.html" style="display:none" onchange="handleFileSelect(this.files[0])">
+      <div id="uploadProgress" style="display:none;margin:12px 0;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;font-weight:600;color:var(--text2);">Yükleniyor...</span>
+          <span id="uploadPercent" style="font-size:12px;font-weight:700;color:var(--green);">0%</span>
+        </div>
+        <div style="background:var(--dim);border-radius:4px;height:6px;overflow:hidden;">
+          <div id="uploadBar" style="background:var(--green);height:100%;width:0%;transition:width .3s;border-radius:4px;"></div>
+        </div>
+      </div>
+      <div class="menu-field" style="margin-top:8px;">
+        <div class="field-label">Menü URL (otomatik dolar veya elle gir)</div>
+        <input class="field-input" id="pushMenuUrl" placeholder="Dosya yükle veya URL yapıştır">
+      </div>
+      <div class="menu-field" style="margin-top:8px;">
+        <div class="field-label">Menü Adı</div>
+        <input class="field-input" id="pushScreenName" placeholder="Örn: Pasta & Salat Menüsü">
       </div>
     </div>
 
-    <!-- URL VEYA DOSYA ADI -->
-    <div class="menu-field" style="margin-top:8px;">
-      <div class="field-label">Menü URL (otomatik dolar veya elle gir)</div>
-      <input class="field-input" id="pushMenuUrl" placeholder="Dosya yükle veya URL yapıştır">
-    </div>
-    <div class="menu-field" style="margin-top:8px;">
-      <div class="field-label">Menü Adı</div>
-      <input class="field-input" id="pushScreenName" placeholder="Örn: Pasta & Salat Menüsü">
+    <!-- SLAYT GÖSTERİSİ SEKMESİ -->
+    <div id="tabSlideContent" style="display:none;">
+      <div style="margin:16px 0 10px 0;font-size:12px;color:var(--text2);">
+        Videolar bittikçe sıradakine geçer. Sınırsız video ekleyebilirsiniz.
+      </div>
+      <div id="slideList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+      <button onclick="addSlideItem()" style="width:100%;padding:12px;border-radius:8px;border:1px dashed var(--dim);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--text2)'">
+        + Video Ekle
+      </button>
+      <div style="margin-top:12px;">
+        <div class="field-label">Slayt Adı</div>
+        <input class="field-input" id="slideShowName" placeholder="Örn: Ana Menü Slaytı" style="margin-top:6px;">
+      </div>
     </div>
 
-    <div class="modal-actions">
+    <div class="modal-actions" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeModal('pushMenuModal')">İptal</button>
       <button class="btn btn-primary" id="pushSendBtn" onclick="confirmPush()">📤 Gönder</button>
     </div>
@@ -1700,28 +1719,139 @@ window.addShop = async function() {
 }
 
 // ── PUSH MENU ──
+// ── SLAYT GÖSTERİSİ ──
+var slideItems = [];
+var currentPushTab = 'single';
+
+window.switchPushTab = function(tab) {
+  currentPushTab = tab;
+  var single = document.getElementById('tabSingleContent');
+  var slide  = document.getElementById('tabSlideContent');
+  var btnS   = document.getElementById('tabSingle');
+  var btnSl  = document.getElementById('tabSlide');
+
+  if (tab === 'single') {
+    single.style.display = 'block';
+    slide.style.display  = 'none';
+    btnS.style.borderColor  = 'var(--green)';
+    btnS.style.background   = 'rgba(0,230,118,0.1)';
+    btnS.style.color        = 'var(--green)';
+    btnSl.style.borderColor = 'var(--dim)';
+    btnSl.style.background  = 'transparent';
+    btnSl.style.color       = 'var(--text2)';
+    document.getElementById('pushSendBtn').textContent = '📤 Gönder';
+  } else {
+    single.style.display = 'none';
+    slide.style.display  = 'block';
+    btnSl.style.borderColor = 'var(--green)';
+    btnSl.style.background  = 'rgba(0,230,118,0.1)';
+    btnSl.style.color       = 'var(--green)';
+    btnS.style.borderColor  = 'var(--dim)';
+    btnS.style.background   = 'transparent';
+    btnS.style.color        = 'var(--text2)';
+    document.getElementById('pushSendBtn').textContent = '🎞️ Slayt Gönder';
+    renderSlideList();
+  }
+}
+
+window.addSlideItem = function() {
+  slideItems.push({ url: '', uploading: false });
+  renderSlideList();
+}
+
+window.removeSlideItem = function(idx) {
+  slideItems.splice(idx, 1);
+  renderSlideList();
+}
+
+window.renderSlideList = function() {
+  var list = document.getElementById('slideList');
+  if (!list) return;
+  list.innerHTML = slideItems.map(function(item, i) {
+    return '<div style="display:flex;gap:8px;align-items:center;background:var(--s2);border-radius:8px;padding:10px;">' +
+      '<div style="color:var(--text2);font-size:12px;font-weight:700;min-width:20px;">' + (i+1) + '</div>' +
+      '<input class="field-input" placeholder="MP4 URL" value="' + (item.url || '') + '" style="flex:1;" oninput="slideItems[' + i + '].url=this.value">' +
+      '<button onclick="uploadSlideItem(' + i + ')" style="padding:8px 12px;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">' +
+        (item.uploading ? '⏳' : '📤 Yükle') +
+      '</button>' +
+      '<button onclick="removeSlideItem(' + i + ')" style="padding:8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:6px;font-size:13px;cursor:pointer;">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+window.uploadSlideItem = async function(idx) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'video/*,image/*';
+  input.onchange = async function() {
+    var file = input.files[0];
+    if (!file) return;
+    slideItems[idx].uploading = true;
+    renderSlideList();
+    try {
+      var url = await uploadToCloudinary(file, function(pct) {});
+      slideItems[idx].url = url;
+      slideItems[idx].uploading = false;
+      renderSlideList();
+    } catch(e) {
+      slideItems[idx].uploading = false;
+      renderSlideList();
+      showToast('Yükleme hatası', 'error');
+    }
+  };
+  input.click();
+}
+
 window.openPush = function(shopId, screenId) {
   pushTargetScreenId = { shopId, screenId };
   const screen = screens[shopId]?.[screenId];
   document.getElementById('pushModalSub').textContent = `Hedef: ${screen?.name || screenId}`;
   document.getElementById('pushMenuUrl').value = screen?.menuUrl || '';
   document.getElementById('pushScreenName').value = screen?.name || '';
+  slideItems = [];
+  // Mevcut slayt varsa yükle
+  if (screen?.slideUrls && Array.isArray(screen.slideUrls)) {
+    slideItems = screen.slideUrls.map(function(u) { return { url: u, uploading: false }; });
+    switchPushTab('slide');
+    document.getElementById('slideShowName').value = screen?.menuName || '';
+  } else {
+    switchPushTab('single');
+  }
   document.getElementById('pushMenuModal').classList.add('open');
 }
 
 window.confirmPush = async function() {
-  const url  = document.getElementById('pushMenuUrl').value.trim();
-  const name = document.getElementById('pushScreenName').value.trim();
-  if (!url) { showToast('URL boş olamaz', 'error'); return; }
-
   const { shopId, screenId } = pushTargetScreenId;
-  await update(ref(db, `screens/${shopId}/${screenId}`), {
-    menuUrl: url,
-    menuName: name || 'Menü',
-    updatedAt: Date.now()
-  });
-  closeModal('pushMenuModal');
-  showToast('✓ Menü gönderildi', 'success');
+
+  if (currentPushTab === 'slide') {
+    // SLAYT MODU
+    var validUrls = slideItems.map(function(i) { return i.url.trim(); }).filter(function(u) { return u; });
+    if (validUrls.length < 2) { showToast('En az 2 video ekleyin', 'error'); return; }
+    var name = document.getElementById('slideShowName').value.trim() || 'Slayt Gösterisi';
+    await update(ref(db, 'screens/' + shopId + '/' + screenId), {
+      menuUrl: validUrls[0],
+      slideUrls: validUrls,
+      slideMode: true,
+      menuName: name,
+      updatedAt: Date.now()
+    });
+    closeModal('pushMenuModal');
+    showToast('🎞️ Slayt gönderildi (' + validUrls.length + ' video)', 'success');
+  } else {
+    // TEK MENÜ MODU
+    const url  = document.getElementById('pushMenuUrl').value.trim();
+    const name = document.getElementById('pushScreenName').value.trim();
+    if (!url) { showToast('URL boş olamaz', 'error'); return; }
+    await update(ref(db, 'screens/' + shopId + '/' + screenId), {
+      menuUrl: url,
+      slideUrls: null,
+      slideMode: false,
+      menuName: name || 'Menü',
+      updatedAt: Date.now()
+    });
+    closeModal('pushMenuModal');
+    showToast('✓ Menü gönderildi', 'success');
+  }
 }
 
 window.pushToAll = function(shopId) {
