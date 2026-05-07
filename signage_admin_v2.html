@@ -2868,6 +2868,19 @@ function renderPriceUpdateList() {
       '</div>';
   }).join('');
   
+  // Değişiklik sayısı
+  var changedCount = puFields.filter(function(f, i) {
+    return puOriginal[i] && f.value !== puOriginal[i].value;
+  }).length;
+  
+  var notice = document.getElementById('puChangedNotice');
+  if (changedCount > 0) {
+    notice.style.display = 'block';
+    document.getElementById('puChangedCount').textContent = changedCount;
+  } else {
+    notice.style.display = 'none';
+  }
+  
   // İlk input'a otomatik odaklan
   setTimeout(function() {
     var firstInput = document.getElementById('puInput0');
@@ -2887,20 +2900,6 @@ window.handlePuKeydown = function(event, idx) {
       // Son inputta Enter/Tab → Yayınla butonuna odaklan
       document.querySelector('#priceUpdateModal .btn-primary').focus();
     }
-  }
-}
-  
-  // Değişiklik sayısı
-  var changedCount = puFields.filter(function(f, i) {
-    return puOriginal[i] && f.value !== puOriginal[i].value;
-  }).length;
-  
-  var notice = document.getElementById('puChangedNotice');
-  if (changedCount > 0) {
-    notice.style.display = 'block';
-    document.getElementById('puChangedCount').textContent = changedCount;
-  } else {
-    notice.style.display = 'none';
   }
 }
 
