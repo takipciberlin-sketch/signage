@@ -2856,8 +2856,9 @@ function renderPriceUpdateList() {
         (changed ? '<div style="color:var(--text2);font-size:10px;">eski: ' + orig.value + '</div>' : '') +
       '</div>' +
       
-      '<input type="text" value="' + (f.value || '').replace(/"/g, '&quot;') + 
+      '<input type="text" id="puInput' + i + '" value="' + (f.value || '').replace(/"/g, '&quot;') + 
         '" oninput="updatePriceValue(' + i + ', this.value)" ' +
+        'onkeydown="handlePuKeydown(event, ' + i + ')" ' +
         'placeholder="Örn: 2,49" ' +
         'style="background:' + (changed ? 'rgba(255,193,7,0.15)' : 'rgba(255,255,255,0.05)') + 
         ';border:1px solid ' + (changed ? '#ffc107' : 'rgba(255,255,255,0.1)') + 
@@ -2866,6 +2867,28 @@ function renderPriceUpdateList() {
       
       '</div>';
   }).join('');
+  
+  // İlk input'a otomatik odaklan
+  setTimeout(function() {
+    var firstInput = document.getElementById('puInput0');
+    if (firstInput) firstInput.focus();
+  }, 100);
+}
+
+window.handlePuKeydown = function(event, idx) {
+  // Enter veya Tab basıldığında bir sonraki input'a geç
+  if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault();
+    var nextInput = document.getElementById('puInput' + (idx + 1));
+    if (nextInput) {
+      nextInput.focus();
+      nextInput.select(); // Tüm metni seç
+    } else {
+      // Son inputta Enter/Tab → Yayınla butonuna odaklan
+      document.querySelector('#priceUpdateModal .btn-primary').focus();
+    }
+  }
+}
   
   // Değişiklik sayısı
   var changedCount = puFields.filter(function(f, i) {
