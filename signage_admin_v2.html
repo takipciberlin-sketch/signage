@@ -399,9 +399,6 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
     <div class="sidebar-divider"></div>
 
     <div class="sidebar-section">
-      <div class="nav-item" onclick="showView('settings')">
-        <span class="icon">⚙️</span> Ayarlar
-      </div>
       <div class="nav-item" onclick="openAddShop()">
         <span class="icon">➕</span> Dükkân Ekle
       </div>
@@ -517,12 +514,6 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
         <div class="field-label">Aylık Ücret (€)</div>
         <input class="field-input" id="newShopFee" type="number" placeholder="Manuel gir">
       </div>
-    </div>
-    
-    <div class="menu-field" style="margin-top:12px;">
-      <div class="field-label">📅 Abonelik Başlangıç Tarihi</div>
-      <input class="field-input" id="newShopSubStart" type="date" value="${new Date().toISOString().split('T')[0]}">
-      <div style="font-size:11px;color:var(--text2);margin-top:4px;">İlk fatura bu tarihten 30 gün sonra oluşturulur</div>
     </div>
 
     <div class="modal-actions">
@@ -701,42 +692,26 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <div style="font-size:11px;color:var(--text2);margin-top:6px;">Hava durumu otomatik gelir, API key gerekmez</div>
     </div>
 
-    <!-- KAYAN YAZILAR + RESİMLER -->
+    <!-- KAYAN YAZI -->
     <div style="background:rgba(255,193,7,0.05);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:14px;margin-top:12px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <span style="font-size:18px;">📢</span>
         <span style="font-size:13px;font-weight:700;color:#ffc107;">Kayan Yazılar</span>
-        <span style="font-size:11px;color:var(--text2);margin-left:4px;">(her yazıya isteğe bağlı resim eklenebilir)</span>
       </div>
       <div id="tickerMessageList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
       <button onclick="addTickerMessage()" style="width:100%;padding:10px;border-radius:6px;border:1px dashed var(--dim);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='#ffc107';this.style.color='#ffc107'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--text2)'">
         + Yeni Yazı Ekle
       </button>
-      <input type="file" id="tickerImageUploadInput" accept="image/*" style="display:none;" onchange="handleTickerImageFile(this.files[0])">
     </div>
 
     <!-- AYARLAR -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
       <div>
-        <div class="field-label">Yazı Rengi</div>
+        <div class="field-label">Renk</div>
         <select id="tickerColor" class="field-input" style="margin-top:6px;">
           <option value="#FFD700">🟡 Sarı</option>
           <option value="#FF5252">🔴 Kırmızı</option>
           <option value="#00E676">🟢 Yeşil</option>
-          <option value="#FFFFFF">⚪ Beyaz</option>
-          <option value="#40C4FF">🔵 Mavi</option>
-          <option value="#FF9800">🟠 Turuncu</option>
-        </select>
-      </div>
-      <div>
-        <div class="field-label">Arkaplan Rengi</div>
-        <select id="tickerBgColor" class="field-input" style="margin-top:6px;">
-          <option value="#000000">⚫ Siyah</option>
-          <option value="#1a1a1a">⬛ Koyu Gri</option>
-          <option value="#2c3e50">🔷 Lacivert</option>
-          <option value="#1e3a2e">🟩 Koyu Yeşil</option>
-          <option value="#3e2723">🟫 Kahverengi</option>
-          <option value="#b71c1c">🔴 Koyu Kırmızı</option>
           <option value="#FFFFFF">⚪ Beyaz</option>
         </select>
       </div>
@@ -769,6 +744,166 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeModal('tickerModal')">İptal</button>
       <button class="btn btn-primary" onclick="saveTickerSettings()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- FİYAT ALANLARI EDİTÖR MODAL (📍 Tek seferlik kurulum) -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="priceFieldsModal">
+  <div class="modal" style="width:1200px;max-width:98vw;max-height:95vh;overflow-y:auto;">
+    <div class="modal-title" id="pfModalTitle">📍 Fiyat Alanlarını Yerleştir</div>
+    <div class="modal-sub" id="pfModalSub">Görsele tıkla → fiyat alanı ekle · Sürükle → konumla</div>
+
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-top:16px;">
+      
+      <!-- CANVAS ALANI -->
+      <div>
+        <div style="background:rgba(0,230,118,0.04);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">💡</span>
+          <div style="flex:1;font-size:12px;color:var(--text2);">
+            <strong style="color:var(--green);">Görsele tıkla</strong> → o noktaya yeni fiyat alanı eklenir. Alanı <strong style="color:var(--green);">sürükleyerek</strong> taşıyabilirsin.
+          </div>
+        </div>
+        
+        <div id="pfCanvasContainer" style="background:#000;border:2px solid rgba(0,230,118,0.3);border-radius:8px;position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;cursor:crosshair;">
+          <img id="pfBackgroundImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;display:none;">
+          <div id="pfFieldsLayer" style="position:absolute;inset:0;"></div>
+          <div id="pfNoImage" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:14px;">
+            ⚠️ Bu TV'ye henüz menü görseli yüklenmemiş.<br>Önce 📤 Menü ile bir PNG yükle.
+          </div>
+        </div>
+        
+        <div style="display:flex;gap:10px;margin-top:10px;font-size:11px;color:var(--text2);">
+          <div>📐 <strong style="color:var(--text);">3840×2040 px</strong> (4K)</div>
+          <div>·</div>
+          <div>📍 <strong style="color:var(--green);" id="pfCount">0</strong> alan</div>
+          <div>·</div>
+          <div>⚠️ Maksimum 50 alan</div>
+        </div>
+      </div>
+      
+      <!-- SAĞ PANEL -->
+      <div>
+        <div id="pfNoSelection" style="background:rgba(255,255,255,0.02);border:1px dashed var(--dim);border-radius:8px;padding:30px 16px;text-align:center;color:var(--text2);font-size:12px;">
+          📍 Bir alana tıkla<br>özelliklerini düzenle
+        </div>
+        
+        <div id="pfSelectedPanel" style="display:none;">
+          <div style="font-size:10px;color:var(--text2);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Seçili: <span id="pfSelectedNum" style="color:var(--green);">Fiyat 1</span></div>
+          
+          <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Etiket (kendi notun)</div>
+            <input id="pfLabel" class="field-input" placeholder="Örn: Big Burger Fiyatı" style="font-size:12px;">
+          </div>
+          
+          <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Varsayılan Değer</div>
+            <input id="pfValue" class="field-input" placeholder="Örn: 9,99€" style="font-size:13px;font-weight:700;color:#FFD700;">
+          </div>
+          
+          <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Font</div>
+            <select id="pfFont" class="field-input" style="font-size:11px;">
+              <option value="Inter">Inter</option>
+              <option value="Bebas Neue">Bebas Neue</option>
+              <option value="Oswald">Oswald</option>
+              <option value="Roboto">Roboto</option>
+              <option value="Arial">Arial</option>
+              <option value="Impact">Impact</option>
+            </select>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+            <div style="background:var(--s2);border-radius:6px;padding:10px;">
+              <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Boyut (px)</div>
+              <input id="pfSize" type="number" class="field-input" value="80" min="20" max="300" style="font-size:12px;">
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:10px;">
+              <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Renk</div>
+              <input id="pfColor" type="color" value="#FFD700" style="width:100%;height:30px;border:none;background:transparent;cursor:pointer;border-radius:4px;">
+            </div>
+          </div>
+          
+          <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:6px;">Font Ağırlığı</div>
+            <select id="pfWeight" class="field-input" style="font-size:11px;">
+              <option value="400">Normal</option>
+              <option value="600">Yarı Kalın</option>
+              <option value="700" selected>Kalın</option>
+              <option value="800">Çok Kalın</option>
+              <option value="900">Ekstra Kalın</option>
+            </select>
+          </div>
+          
+          <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:6px;">Hizalama</div>
+            <div style="display:flex;gap:4px;">
+              <button class="pf-align-btn" data-align="left" onclick="setPfAlign('left')" style="flex:1;padding:6px;background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;font-size:14px;">←</button>
+              <button class="pf-align-btn" data-align="center" onclick="setPfAlign('center')" style="flex:1;padding:6px;background:rgba(0,230,118,0.15);border:1px solid var(--green);color:var(--green);border-radius:4px;cursor:pointer;font-size:14px;">↔</button>
+              <button class="pf-align-btn" data-align="right" onclick="setPfAlign('right')" style="flex:1;padding:6px;background:var(--s3);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;font-size:14px;">→</button>
+            </div>
+          </div>
+          
+          <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:14px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:6px;">Gölge / Kontur</div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text);cursor:pointer;">
+              <input type="checkbox" id="pfShadow" checked> Yazı altına siyah gölge ekle
+            </label>
+          </div>
+          
+          <button onclick="deleteSelectedPriceField()" style="width:100%;padding:9px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.3);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🗑 Bu Alanı Sil</button>
+        </div>
+      </div>
+      
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('priceFieldsModal')">İptal</button>
+      <button class="btn btn-primary" onclick="savePriceFields()">💾 Kaydet ve Yayınla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- HIZLI FİYAT GÜNCELLEME MODAL (⚡ Sık kullanılan) -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="priceUpdateModal">
+  <div class="modal" style="width:900px;max-width:98vw;max-height:95vh;overflow-y:auto;">
+    <div class="modal-title">⚡ Hızlı Fiyat Güncelle</div>
+    <div class="modal-sub" id="puModalSub">Sadece değişen fiyatları gir → Yayınla</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      
+      <!-- ÖNİZLEME -->
+      <div>
+        <div style="font-size:10px;color:var(--text2);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Canlı Önizleme</div>
+        <div id="puPreviewContainer" style="background:#000;border:1px solid var(--border);border-radius:8px;position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;">
+          <img id="puBackgroundImg" src="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;">
+          <div id="puFieldsLayer" style="position:absolute;inset:0;"></div>
+          <div id="puNoImage" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:13px;text-align:center;padding:20px;">
+            ⚠️ Bu TV için fiyat şablonu kurulmamış.<br>Önce 📍 <strong>Alan</strong> butonuyla şablon oluştur.
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:6px;">↑ Değişiklik anında burada görünür</div>
+      </div>
+      
+      <!-- FİYAT LİSTESİ -->
+      <div>
+        <div style="font-size:10px;color:var(--text2);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;"><span id="puFieldCount">0</span> Fiyat Alanı</div>
+        <div id="puFieldsList" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;padding-right:4px;"></div>
+        
+        <div id="puChangedNotice" style="display:none;background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);border-radius:6px;padding:10px;margin-top:10px;font-size:11px;color:#ffc107;font-weight:600;">
+          ⚠️ <span id="puChangedCount">0</span> fiyat değişti, henüz yayınlanmadı
+        </div>
+      </div>
+      
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('priceUpdateModal')">İptal</button>
+      <button class="btn btn-primary" onclick="publishPriceUpdates()">📤 Yayınla</button>
     </div>
   </div>
 </div>
@@ -907,7 +1042,6 @@ function renderCurrentView() {
   else if (currentView === 'menus') renderMenusView();
   else if (currentView === 'payments') renderPaymentsView();
   else if (currentView === 'customers') renderCustomersView();
-  else if (currentView === 'settings') renderSettingsView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
 }
 
@@ -1223,6 +1357,8 @@ function renderScreenCard(sid, screen, shopId) {
       <button class="screen-btn push" onclick="openPush('${shopId}','${sid}')">📤 Menü</button>
       <button class="screen-btn restart" onclick="openScheduleModal('${shopId}','${sid}')" style="background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.2);">⏰ Zaman</button>
       <button class="screen-btn restart" onclick="openTickerModal('${shopId}','${sid}')" style="background:rgba(255,193,7,0.1);color:#ffc107;border:1px solid rgba(255,193,7,0.2);">📢 Bant</button>
+      <button class="screen-btn restart" onclick="openPriceUpdateModal('${shopId}','${sid}')" style="background:rgba(0,230,118,0.1);color:#00e676;border:1px solid rgba(0,230,118,0.2);">⚡ Fiyat</button>
+      <button class="screen-btn restart" onclick="openPriceFieldsEditor('${shopId}','${sid}')" style="background:rgba(64,196,255,0.1);color:#40c4ff;border:1px solid rgba(64,196,255,0.2);">📍 Alan</button>
       <button class="screen-btn restart" onclick="pingScreen('${shopId}','${sid}')">🔄</button>
     </div>
   </div>`;
@@ -1294,10 +1430,10 @@ function renderMenusView() {
 function getPaymentStatus(shop) {
   // Ödeme durumu hesapla
   const lastPaid = shop.lastPaidAt ? new Date(shop.lastPaidAt) : null;
-  const startDate = shop.subscriptionStart ? new Date(shop.subscriptionStart) : (shop.createdAt ? new Date(shop.createdAt) : new Date());
+  const startDate = shop.createdAt ? new Date(shop.createdAt) : new Date();
   const today = new Date();
 
-  // Son ödeme yoksa: ilk fatura tarihi = subscriptionStart + 30 gün
+  // Son ödeme yoksa: ilk fatura tarihi = oluşturulma + 30 gün
   // Son ödeme varsa: bir sonraki tarih = son ödeme + 30 gün
   let nextDueDate;
   if (lastPaid) {
@@ -1600,23 +1736,13 @@ try {
   if (savedCfg) INVOICE_CONFIG = Object.assign(INVOICE_CONFIG, JSON.parse(savedCfg));
 } catch(e) {}
 
-// Fatura sayacı (her yıl için ayrı)
-function getNextInvoiceNumber() {
-  const year = new Date().getFullYear();
-  const key = 'signageos_invoice_counter_' + year;
-  let counter = parseInt(localStorage.getItem(key)) || 0;
-  counter++;
-  localStorage.setItem(key, counter);
-  return year + '-' + String(counter).padStart(4, '0');
-}
-
 window.generateInvoice = function(shopId) {
   var shop = shops[shopId];
   if (!shop) { showToast('Dükkân bulunamadı', 'error'); return; }
 
   var now = new Date();
   var monat = now.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
-  var rechnungNr = getNextInvoiceNumber();
+  var rechnungNr = 'SOS-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + shopId.slice(-4);
   var datum = now.toLocaleDateString('de-DE');
   var faellig = new Date(now.getTime() + 14*24*60*60*1000).toLocaleDateString('de-DE');
   
@@ -1659,7 +1785,6 @@ window.generateInvoice = function(shopId) {
     + (INVOICE_CONFIG.inhaber ? 'Inhaber: ' + INVOICE_CONFIG.inhaber + '<br>' : '')
     + INVOICE_CONFIG.adresse + '<br>'
     + (INVOICE_CONFIG.telefon ? 'Tel: ' + INVOICE_CONFIG.telefon + '<br>' : '')
-    + (INVOICE_CONFIG.website ? INVOICE_CONFIG.website + '<br>' : '')
     + INVOICE_CONFIG.email
     + '</div></div>'
     + '<div class="to">'
@@ -1897,35 +2022,19 @@ window.saveScreenSchedule = async function() {
 var activeTickerScreen = null;
 var tickerEnabledTemp = false;
 window.tickerMessages = [];
-window.uploadTargetIdx = null; // Hangi mesaja resim yükleniyor
 
 window.openTickerModal = function(shopId, screenId) {
   activeTickerScreen = { shopId, screenId };
   var screen = screens[shopId]?.[screenId];
   document.getElementById('tickerModalSub').textContent = (screen?.name || screenId) + ' için alt bant ayarı';
   
+  // Mevcut ayarları yükle
   tickerEnabledTemp = screen?.tickerEnabled || false;
+  tickerMessages = screen?.tickerMessages || [];
+  if (typeof tickerMessages === 'string') tickerMessages = [tickerMessages];
   
-  // Eski format → yeni format dönüştür
-  var msgs = screen?.tickerMessages || [];
-  if (typeof msgs === 'string') msgs = [msgs];
-  var imgs = screen?.tickerImages || [];
-  if (!Array.isArray(imgs)) imgs = [];
-  
-  // Birleştir: her mesaj {text, image} objesi olur
-  tickerMessages = msgs.map(function(m, i) {
-    if (typeof m === 'string') {
-      // Eski format - resim var mı eşleştir
-      return { text: m, image: imgs[i]?.url || '' };
-    } else {
-      // Zaten yeni format
-      return { text: m.text || '', image: m.image || '' };
-    }
-  });
-
   document.getElementById('tickerCity').value = screen?.tickerCity || 'Berlin';
   document.getElementById('tickerColor').value = screen?.tickerColor || '#FFD700';
-  document.getElementById('tickerBgColor').value = screen?.tickerBgColor || '#000000';
   document.getElementById('tickerSpeed').value = screen?.tickerSpeed || 60;
   document.getElementById('tickerWeatherEnabled').checked = screen?.weatherEnabled !== false;
   
@@ -1953,43 +2062,8 @@ function updateTickerToggleUI() {
   }
 }
 
-// ── HER MESAJA RESİM YÜKLE ──
-window.uploadImageForMessage = function(idx) {
-  uploadTargetIdx = idx;
-  document.getElementById('tickerImageUploadInput').click();
-}
-
-window.removeImageFromMessage = function(idx) {
-  if (tickerMessages[idx]) {
-    tickerMessages[idx].image = '';
-    renderTickerMessages();
-  }
-}
-
-window.handleTickerImageFile = async function(file) {
-  if (!file || uploadTargetIdx === null) return;
-  var idx = uploadTargetIdx;
-  showToast('⏳ Resim yükleniyor...', 'success');
-  var formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', 'ml_default');
-  try {
-    var res = await fetch('https://api.cloudinary.com/v1_1/dovyxuyhe/auto/upload', { method:'POST', body:formData });
-    var json = await res.json();
-    if (json.secure_url && tickerMessages[idx]) {
-      tickerMessages[idx].image = json.secure_url;
-      renderTickerMessages();
-      showToast('✅ Resim eklendi', 'success');
-    }
-  } catch(e) {
-    showToast('⚠️ Yükleme başarısız', 'error');
-  }
-  uploadTargetIdx = null;
-  document.getElementById('tickerImageUploadInput').value = '';
-}
-
 window.addTickerMessage = function() {
-  tickerMessages.push({ text: '', image: '' });
+  tickerMessages.push('');
   renderTickerMessages();
 }
 
@@ -2007,25 +2081,11 @@ function renderTickerMessages() {
     return;
   }
   list.innerHTML = tickerMessages.map(function(msg, i) {
-    var safeText = (msg.text || '').replace(/"/g, '&quot;');
-    var imgUrl = msg.image || '';
-    
-    // Resim alanı: ya küçük önizleme + sil butonu, ya da + ekle butonu
-    var imageBox;
-    if (imgUrl) {
-      imageBox = '<div style="position:relative;width:48px;height:48px;flex-shrink:0;">' +
-        '<img src="' + imgUrl + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,0.05);border:1px solid var(--border);">' +
-        '<button onclick="removeImageFromMessage(' + i + ')" title="Resmi kaldır" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#ff5252;color:#fff;border:none;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>' +
-      '</div>';
-    } else {
-      imageBox = '<button onclick="uploadImageForMessage(' + i + ')" title="Resim ekle" style="width:48px;height:48px;border-radius:6px;border:1px dashed var(--dim);background:transparent;color:var(--text2);cursor:pointer;font-size:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor=\'var(--green)\';this.style.color=\'var(--green)\'" onmouseout="this.style.borderColor=\'var(--dim)\';this.style.color=\'var(--text2)\'">🖼️</button>';
-    }
-    
-    return '<div style="display:flex;gap:10px;align-items:center;background:var(--s2);border-radius:8px;padding:10px;">' +
+    var safe = (msg || '').replace(/"/g, '&quot;');
+    return '<div style="display:flex;gap:8px;align-items:center;background:var(--s2);border-radius:6px;padding:8px;">' +
       '<span style="color:#ffc107;font-size:12px;font-weight:700;min-width:18px;">' + (i+1) + '</span>' +
-      imageBox +
-      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safeText + '" style="flex:1;" oninput="window.tickerMessages[' + i + '].text=this.value;window.updateTickerPreview()">' +
-      '<button onclick="removeTickerMessage(' + i + ')" style="padding:6px 10px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:6px;font-size:12px;cursor:pointer;flex-shrink:0;">✕</button>' +
+      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safe + '" style="flex:1;" oninput="window.tickerMessages[' + i + ']=this.value;window.updateTickerPreview()">' +
+      '<button onclick="removeTickerMessage(' + i + ')" style="padding:6px 8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:4px;font-size:12px;cursor:pointer;">✕</button>' +
     '</div>';
   }).join('');
 }
@@ -2034,23 +2094,16 @@ window.updateTickerPreview = function() {
   var preview = document.getElementById('tickerPreviewText');
   if (!preview) return;
   var color = document.getElementById('tickerColor').value;
-  var msgs = tickerMessages.filter(function(m) { return m.text && m.text.trim(); });
-  if (msgs.length === 0) { preview.textContent = 'Hoş Geldiniz'; return; }
+  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
+  if (msgs.length === 0) msgs = ['Hoş Geldiniz'];
   preview.style.color = color;
-  preview.textContent = msgs.map(function(m) { return m.text; }).join(' • ') + ' • ' + msgs.map(function(m) { return m.text; }).join(' • ');
+  preview.textContent = msgs.join(' • ') + ' • ' + msgs.join(' • ');
 }
 
 // Renk değişince önizleme güncelle
 document.addEventListener('change', function(e) {
-  if (e.target && (e.target.id === 'tickerColor' || e.target.id === 'tickerSpeed' || e.target.id === 'tickerBgColor')) {
+  if (e.target && (e.target.id === 'tickerColor' || e.target.id === 'tickerSpeed')) {
     updateTickerPreview();
-    if (e.target.id === 'tickerBgColor') {
-      var preview = document.getElementById('tickerPreview');
-      if (preview) {
-        var bg = e.target.value;
-        preview.style.background = 'linear-gradient(90deg, ' + bg + ', ' + bg + 'dd)';
-      }
-    }
   }
 });
 
@@ -2058,20 +2111,14 @@ window.saveTickerSettings = async function() {
   if (!activeTickerScreen) return;
   var { shopId, screenId } = activeTickerScreen;
   
-  // Boş yazıları filtrele (resim olsa bile yazı yoksa atla)
-  var filtered = tickerMessages.filter(function(m) { return m.text && m.text.trim(); });
-  
-  // Geri uyumluluk: hem yeni format (objects) hem eski format (strings + tickerImages) yaz
-  var msgsForSave = filtered.length > 0 ? filtered.map(function(m) { return { text: m.text.trim(), image: m.image || '' }; }) : [{ text: 'Hoş Geldiniz', image: '' }];
+  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
   
   var data = {
     tickerEnabled: tickerEnabledTemp,
     tickerCity: document.getElementById('tickerCity').value.trim() || 'Berlin',
     tickerColor: document.getElementById('tickerColor').value,
-    tickerBgColor: document.getElementById('tickerBgColor').value,
     tickerSpeed: parseInt(document.getElementById('tickerSpeed').value),
-    tickerMessages: msgsForSave,
-    tickerImages: [], // Eski alanı temizle (artık her mesajla birlikte)
+    tickerMessages: msgs.length > 0 ? msgs : ['Hoş Geldiniz'],
     weatherEnabled: document.getElementById('tickerWeatherEnabled').checked
   };
   
@@ -2187,7 +2234,6 @@ window.addShop = async function() {
   const iban      = document.getElementById('newShopIban').value.trim();
   const screens_  = parseInt(document.getElementById('newShopScreens').value) || 1;
   const fee       = parseInt(document.getElementById('newShopFee').value) || 0;
-  const subStart  = document.getElementById('newShopSubStart').value;
 
   if (!name) { showToast('Dükkân adı boş olamaz', 'error'); return; }
 
@@ -2200,7 +2246,6 @@ window.addShop = async function() {
       ownerName: owner, ownerEmail: email,
       ownerPhone: phone, ownerWhatsapp: whatsapp,
       taxId, iban,
-      subscriptionStart: subStart ? new Date(subStart).getTime() : Date.now(),
       updatedAt: Date.now()
     });
 
@@ -2240,7 +2285,6 @@ window.addShop = async function() {
     ownerName: owner, ownerEmail: email,
     ownerPhone: phone, ownerWhatsapp: whatsapp,
     taxId, iban,
-    subscriptionStart: subStart ? new Date(subStart).getTime() : Date.now(),
     createdAt: Date.now(), active: true
   });
 
@@ -2469,100 +2513,361 @@ async function uploadToCloudinary(file) {
   }
 }
 
-// ── AYARLAR (SETTINGS) ──
-function renderSettingsView() {
-  document.getElementById('mainContent').innerHTML = `
-  <div class="page-header">
-    <div>
-      <div class="page-title">⚙️ Ayarlar</div>
-      <div class="page-sub">Fatura bilgileri · Sistem ayarları</div>
-    </div>
-  </div>
+// ══════════════════════════════════════════════════════════════
+// FİYAT ALANLARI EDİTÖR (📍 Tek seferlik kurulum)
+// ══════════════════════════════════════════════════════════════
+var pfActiveScreen = null;          // {shopId, screenId}
+var pfFields = [];                  // Mevcut alanlar
+var pfSelectedIdx = -1;             // Seçili alan
+var pfMaxFields = 50;               // Maksimum alan sayısı
+var pfDragging = false;
+var pfDragOffset = {x:0, y:0};
 
-  <div class="section-title">📄 Fatura Bilgileri</div>
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div>
-        <div class="field-label">Firma İsmi</div>
-        <input type="text" id="settingFirma" class="field-input" value="${INVOICE_CONFIG.firma || ''}" placeholder="SignageOS Berlin">
-      </div>
-      <div>
-        <div class="field-label">İnhaber / Sahip</div>
-        <input type="text" id="settingInhaber" class="field-input" value="${INVOICE_CONFIG.inhaber || ''}" placeholder="Ocak">
-      </div>
-      <div>
-        <div class="field-label">Adres</div>
-        <input type="text" id="settingAdresse" class="field-input" value="${INVOICE_CONFIG.adresse || ''}" placeholder="Berlin, Deutschland">
-      </div>
-      <div>
-        <div class="field-label">Telefon</div>
-        <input type="text" id="settingTelefon" class="field-input" value="${INVOICE_CONFIG.telefon || ''}" placeholder="+49 30 1234567">
-      </div>
-      <div>
-        <div class="field-label">E-Mail</div>
-        <input type="email" id="settingEmail" class="field-input" value="${INVOICE_CONFIG.email || ''}" placeholder="info@signageos.de">
-      </div>
-      <div>
-        <div class="field-label">Website</div>
-        <input type="text" id="settingWebsite" class="field-input" value="${INVOICE_CONFIG.website || ''}" placeholder="www.signageos.de">
-      </div>
-      <div>
-        <div class="field-label">IBAN</div>
-        <input type="text" id="settingIban" class="field-input" value="${INVOICE_CONFIG.iban || ''}" placeholder="DE00 0000 0000 0000 0000 00">
-      </div>
-      <div>
-        <div class="field-label">BIC</div>
-        <input type="text" id="settingBic" class="field-input" value="${INVOICE_CONFIG.bic || ''}" placeholder="DEUTDEDB">
-      </div>
-      <div>
-        <div class="field-label">Steuernummer</div>
-        <input type="text" id="settingSteuernr" class="field-input" value="${INVOICE_CONFIG.steuernr || ''}" placeholder="12345/67890">
-      </div>
-      <div>
-        <div class="field-label">USt-IdNr.</div>
-        <input type="text" id="settingUstId" class="field-input" value="${INVOICE_CONFIG.ustId || ''}" placeholder="DE123456789">
-      </div>
-    </div>
-    <div style="margin-top:20px;display:flex;justify-content:flex-end;">
-      <button class="btn btn-primary" onclick="saveInvoiceSettings()">💾 Kaydet</button>
-    </div>
-  </div>
-
-  <div class="section-title">ℹ️ Sistem Bilgileri</div>
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;">
-    <div style="display:grid;grid-template-columns:200px 1fr;gap:12px;font-size:13px;">
-      <div style="color:var(--text2);">Toplam Dükkân:</div>
-      <div style="color:var(--text);font-weight:600;">${Object.keys(shops).length}</div>
-      
-      <div style="color:var(--text2);">Toplam Ekran:</div>
-      <div style="color:var(--text);font-weight:600;">${Object.values(screens).flatMap(s => Object.values(s)).length}</div>
-      
-      <div style="color:var(--text2);">Firebase Bağlantı:</div>
-      <div style="color:var(--green);font-weight:600;">● Aktif</div>
-      
-      <div style="color:var(--text2);">Versiyon:</div>
-      <div style="color:var(--text);font-weight:600;">SignageOS v2.0</div>
-    </div>
-  </div>
-  `;
+window.openPriceFieldsEditor = function(shopId, screenId) {
+  pfActiveScreen = { shopId, screenId };
+  var screen = screens[shopId]?.[screenId];
+  
+  document.getElementById('pfModalSub').textContent = 
+    (screen?.name || screenId) + ' için fiyat alanlarını düzenle';
+  
+  // Mevcut alanları yükle
+  pfFields = (screen?.priceFields || []).map(function(f) {
+    return Object.assign({
+      label: 'Fiyat',
+      value: '0,00€',
+      x: 50, y: 50,         // % cinsinden konum
+      font: 'Inter',
+      size: 80,
+      color: '#FFD700',
+      weight: '700',
+      align: 'center',
+      shadow: true
+    }, f);
+  });
+  
+  pfSelectedIdx = -1;
+  
+  // Arkaplan görselini yükle
+  var bg = document.getElementById('pfBackgroundImg');
+  var noImg = document.getElementById('pfNoImage');
+  if (screen?.menuUrl && (screen.menuUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) || screen.menuUrl.includes('cloudinary'))) {
+    bg.src = screen.menuUrl;
+    bg.style.display = 'block';
+    noImg.style.display = 'none';
+  } else {
+    bg.style.display = 'none';
+    noImg.style.display = 'flex';
+  }
+  
+  renderPriceFieldsCanvas();
+  updatePriceFieldsPanel();
+  
+  document.getElementById('priceFieldsModal').classList.add('open');
+  
+  // Canvas tıklama ve sürükleme listener'ları
+  setupPriceFieldsCanvas();
 }
 
-window.saveInvoiceSettings = function() {
-  INVOICE_CONFIG = {
-    firma: document.getElementById('settingFirma').value.trim(),
-    inhaber: document.getElementById('settingInhaber').value.trim(),
-    adresse: document.getElementById('settingAdresse').value.trim(),
-    telefon: document.getElementById('settingTelefon').value.trim(),
-    email: document.getElementById('settingEmail').value.trim(),
-    website: document.getElementById('settingWebsite').value.trim(),
-    iban: document.getElementById('settingIban').value.trim(),
-    bic: document.getElementById('settingBic').value.trim(),
-    steuernr: document.getElementById('settingSteuernr').value.trim(),
-    ustId: document.getElementById('settingUstId').value.trim()
+function setupPriceFieldsCanvas() {
+  var canvas = document.getElementById('pfCanvasContainer');
+  
+  // Canvas'a tıklayınca yeni alan ekle
+  canvas.onclick = function(e) {
+    // Eğer mevcut bir alana tıklandıysa hiçbir şey yapma (alan kendi tıklamasını yönetir)
+    if (e.target.classList.contains('pf-field')) return;
+    if (pfDragging) { pfDragging = false; return; }
+    
+    if (pfFields.length >= pfMaxFields) {
+      showToast('⚠️ Maksimum ' + pfMaxFields + ' alan eklenebilir', 'error');
+      return;
+    }
+    
+    var rect = canvas.getBoundingClientRect();
+    var x = ((e.clientX - rect.left) / rect.width) * 100;
+    var y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    pfFields.push({
+      label: 'Fiyat ' + (pfFields.length + 1),
+      value: '0,00€',
+      x: Math.max(5, Math.min(95, x)),
+      y: Math.max(5, Math.min(95, y)),
+      font: 'Inter',
+      size: 80,
+      color: '#FFD700',
+      weight: '700',
+      align: 'center',
+      shadow: true
+    });
+    
+    pfSelectedIdx = pfFields.length - 1;
+    renderPriceFieldsCanvas();
+    updatePriceFieldsPanel();
+  };
+}
+
+function renderPriceFieldsCanvas() {
+  var layer = document.getElementById('pfFieldsLayer');
+  document.getElementById('pfCount').textContent = pfFields.length;
+  
+  layer.innerHTML = pfFields.map(function(f, i) {
+    var isSel = i === pfSelectedIdx;
+    var shadow = f.shadow ? 'text-shadow:2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;' : '';
+    var transform = f.align === 'center' ? 'translate(-50%, -50%)' : 
+                    f.align === 'right' ? 'translate(-100%, -50%)' : 
+                    'translate(0, -50%)';
+    
+    // Önizleme boyutunu küçült (3840px → ~1100px container, oran ~0.29)
+    // Ama burada % bazlı çalıştığımız için font-size'ı container'a göre ölçeklendir
+    var displaySize = (f.size / 3840) * 100; // viewport width'in yüzdesi olarak
+    
+    return '<div class="pf-field" data-idx="' + i + '" ' +
+      'style="position:absolute;left:' + f.x + '%;top:' + f.y + '%;' +
+      'transform:' + transform + ';' +
+      'font-family:\'' + f.font + '\',sans-serif;' +
+      'font-size:' + Math.max(12, displaySize * 10) + 'px;' +
+      'font-weight:' + f.weight + ';' +
+      'color:' + f.color + ';' + shadow +
+      'white-space:nowrap;cursor:move;user-select:none;' +
+      'padding:2px 6px;' +
+      (isSel ? 'outline:2px solid #00e676;outline-offset:2px;background:rgba(0,230,118,0.1);' : 'outline:1px dashed rgba(255,255,255,0.3);') +
+      '" onmousedown="startDragPriceField(event,' + i + ')">' +
+      f.value +
+      '<span style="position:absolute;top:-8px;left:-8px;background:' + (isSel ? '#00e676' : '#FFD700') + ';color:#000;font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;text-shadow:none;">' + (i+1) + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+window.startDragPriceField = function(e, idx) {
+  e.stopPropagation();
+  e.preventDefault();
+  pfSelectedIdx = idx;
+  pfDragging = true;
+  
+  var canvas = document.getElementById('pfCanvasContainer');
+  var rect = canvas.getBoundingClientRect();
+  var f = pfFields[idx];
+  pfDragOffset.x = ((e.clientX - rect.left) / rect.width) * 100 - f.x;
+  pfDragOffset.y = ((e.clientY - rect.top) / rect.height) * 100 - f.y;
+  
+  document.onmousemove = function(ev) {
+    if (!pfDragging) return;
+    var x = ((ev.clientX - rect.left) / rect.width) * 100 - pfDragOffset.x;
+    var y = ((ev.clientY - rect.top) / rect.height) * 100 - pfDragOffset.y;
+    pfFields[idx].x = Math.max(0, Math.min(100, x));
+    pfFields[idx].y = Math.max(0, Math.min(100, y));
+    renderPriceFieldsCanvas();
   };
   
-  localStorage.setItem('signageos_invoice_cfg', JSON.stringify(INVOICE_CONFIG));
-  showToast('✓ Fatura ayarları kaydedildi', 'success');
+  document.onmouseup = function() {
+    document.onmousemove = null;
+    document.onmouseup = null;
+    setTimeout(function() { pfDragging = false; }, 100);
+  };
+  
+  updatePriceFieldsPanel();
+}
+
+function updatePriceFieldsPanel() {
+  var noSel = document.getElementById('pfNoSelection');
+  var sel = document.getElementById('pfSelectedPanel');
+  
+  if (pfSelectedIdx < 0 || pfSelectedIdx >= pfFields.length) {
+    noSel.style.display = 'block';
+    sel.style.display = 'none';
+    return;
+  }
+  
+  var f = pfFields[pfSelectedIdx];
+  noSel.style.display = 'none';
+  sel.style.display = 'block';
+  
+  document.getElementById('pfSelectedNum').textContent = 'Fiyat ' + (pfSelectedIdx + 1);
+  document.getElementById('pfLabel').value = f.label;
+  document.getElementById('pfValue').value = f.value;
+  document.getElementById('pfFont').value = f.font;
+  document.getElementById('pfSize').value = f.size;
+  document.getElementById('pfColor').value = f.color;
+  document.getElementById('pfWeight').value = f.weight;
+  document.getElementById('pfShadow').checked = f.shadow;
+  
+  // Hizalama butonlarını güncelle
+  document.querySelectorAll('.pf-align-btn').forEach(function(btn) {
+    var isActive = btn.dataset.align === f.align;
+    btn.style.background = isActive ? 'rgba(0,230,118,0.15)' : 'var(--s3)';
+    btn.style.borderColor = isActive ? 'var(--green)' : 'var(--border)';
+    btn.style.color = isActive ? 'var(--green)' : 'var(--text2)';
+  });
+}
+
+window.setPfAlign = function(align) {
+  if (pfSelectedIdx < 0) return;
+  pfFields[pfSelectedIdx].align = align;
+  renderPriceFieldsCanvas();
+  updatePriceFieldsPanel();
+}
+
+// Sağ panel input değişikliklerini dinle
+document.addEventListener('input', function(e) {
+  if (pfSelectedIdx < 0 || !pfFields[pfSelectedIdx]) return;
+  if (!document.getElementById('priceFieldsModal').classList.contains('open')) return;
+  
+  var f = pfFields[pfSelectedIdx];
+  var changed = false;
+  
+  if (e.target.id === 'pfLabel') { f.label = e.target.value; changed = true; }
+  if (e.target.id === 'pfValue') { f.value = e.target.value; changed = true; }
+  if (e.target.id === 'pfFont') { f.font = e.target.value; changed = true; }
+  if (e.target.id === 'pfSize') { f.size = parseInt(e.target.value) || 80; changed = true; }
+  if (e.target.id === 'pfColor') { f.color = e.target.value; changed = true; }
+  if (e.target.id === 'pfWeight') { f.weight = e.target.value; changed = true; }
+  if (e.target.id === 'pfShadow') { f.shadow = e.target.checked; changed = true; }
+  
+  if (changed) renderPriceFieldsCanvas();
+});
+
+window.deleteSelectedPriceField = function() {
+  if (pfSelectedIdx < 0) return;
+  if (!confirm('Bu fiyat alanını silmek istediğinden emin misin?')) return;
+  pfFields.splice(pfSelectedIdx, 1);
+  pfSelectedIdx = -1;
+  renderPriceFieldsCanvas();
+  updatePriceFieldsPanel();
+}
+
+window.savePriceFields = async function() {
+  if (!pfActiveScreen) return;
+  var { shopId, screenId } = pfActiveScreen;
+  
+  // Boş value'ları temizleme - hepsini kaydet (varsayılan 0,00€ olabilir)
+  await update(ref(db, 'screens/' + shopId + '/' + screenId), {
+    priceFields: pfFields,
+    priceFieldsUpdatedAt: Date.now()
+  });
+  
+  closeModal('priceFieldsModal');
+  showToast('✓ ' + pfFields.length + ' fiyat alanı kaydedildi ve yayınlandı', 'success');
+}
+
+// ══════════════════════════════════════════════════════════════
+// HIZLI FİYAT GÜNCELLEME (⚡ Sık kullanılan)
+// ══════════════════════════════════════════════════════════════
+var puActiveScreen = null;
+var puFields = [];                  // Düzenlenen alanlar (geçici)
+var puOriginal = [];                // Orijinal değerler (karşılaştırma için)
+
+window.openPriceUpdateModal = function(shopId, screenId) {
+  puActiveScreen = { shopId, screenId };
+  var screen = screens[shopId]?.[screenId];
+  
+  document.getElementById('puModalSub').textContent = 
+    (screen?.name || screenId) + ' için fiyatları güncelle';
+  
+  puFields = JSON.parse(JSON.stringify(screen?.priceFields || []));
+  puOriginal = JSON.parse(JSON.stringify(puFields));
+  
+  // Önizleme arkaplanı
+  var bg = document.getElementById('puBackgroundImg');
+  var noImg = document.getElementById('puNoImage');
+  if (puFields.length > 0 && screen?.menuUrl) {
+    bg.src = screen.menuUrl;
+    bg.style.display = 'block';
+    noImg.style.display = 'none';
+  } else {
+    bg.style.display = 'none';
+    noImg.style.display = 'flex';
+  }
+  
+  renderPriceUpdatePreview();
+  renderPriceUpdateList();
+  
+  document.getElementById('priceUpdateModal').classList.add('open');
+}
+
+function renderPriceUpdatePreview() {
+  var layer = document.getElementById('puFieldsLayer');
+  layer.innerHTML = puFields.map(function(f, i) {
+    var shadow = f.shadow ? 'text-shadow:2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;' : '';
+    var transform = f.align === 'center' ? 'translate(-50%, -50%)' : 
+                    f.align === 'right' ? 'translate(-100%, -50%)' : 
+                    'translate(0, -50%)';
+    var displaySize = Math.max(12, ((f.size / 3840) * 100) * 5); // küçük önizleme
+    
+    return '<div style="position:absolute;left:' + f.x + '%;top:' + f.y + '%;' +
+      'transform:' + transform + ';' +
+      'font-family:\'' + f.font + '\',sans-serif;' +
+      'font-size:' + displaySize + 'px;' +
+      'font-weight:' + f.weight + ';' +
+      'color:' + f.color + ';' + shadow +
+      'white-space:nowrap;padding:2px 4px;">' + f.value + '</div>';
+  }).join('');
+}
+
+function renderPriceUpdateList() {
+  document.getElementById('puFieldCount').textContent = puFields.length;
+  
+  if (puFields.length === 0) {
+    document.getElementById('puFieldsList').innerHTML = 
+      '<div style="text-align:center;padding:30px;color:var(--text2);font-size:13px;">⚠️ Bu TV için fiyat şablonu henüz oluşturulmamış.<br><br>📍 <strong>Alan</strong> butonuyla önce şablon oluştur.</div>';
+    document.getElementById('puChangedNotice').style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('puFieldsList').innerHTML = puFields.map(function(f, i) {
+    var orig = puOriginal[i];
+    var changed = orig && f.value !== orig.value;
+    
+    return '<div style="background:' + (changed ? 'rgba(255,193,7,0.05)' : 'rgba(255,255,255,0.03)') + 
+      ';border-left:3px solid ' + (changed ? '#ffc107' : 'rgba(255,255,255,0.1)') + 
+      ';border-radius:5px;padding:8px 10px;display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;">' +
+      
+      '<div>' +
+        '<div style="color:' + (changed ? 'var(--text)' : 'var(--text2)') + ';font-size:12px;font-weight:600;">' + (f.label || ('Fiyat ' + (i+1))) + '</div>' +
+        (changed ? '<div style="color:var(--text2);font-size:10px;">eski: ' + orig.value + '</div>' : '') +
+      '</div>' +
+      
+      '<input type="text" value="' + (f.value || '').replace(/"/g, '&quot;') + 
+        '" oninput="updatePriceValue(' + i + ', this.value)" ' +
+        'style="background:' + (changed ? 'rgba(255,193,7,0.15)' : 'rgba(255,255,255,0.05)') + 
+        ';border:1px solid ' + (changed ? '#ffc107' : 'rgba(255,255,255,0.1)') + 
+        ';color:' + (changed ? '#ffc107' : 'var(--text)') + 
+        ';padding:6px 8px;border-radius:4px;font-size:13px;font-weight:700;text-align:center;font-family:\'Inter\',sans-serif;">' +
+      
+      '</div>';
+  }).join('');
+  
+  // Değişiklik sayısı
+  var changedCount = puFields.filter(function(f, i) {
+    return puOriginal[i] && f.value !== puOriginal[i].value;
+  }).length;
+  
+  var notice = document.getElementById('puChangedNotice');
+  if (changedCount > 0) {
+    notice.style.display = 'block';
+    document.getElementById('puChangedCount').textContent = changedCount;
+  } else {
+    notice.style.display = 'none';
+  }
+}
+
+window.updatePriceValue = function(idx, value) {
+  if (puFields[idx]) {
+    puFields[idx].value = value;
+    renderPriceUpdatePreview();
+    renderPriceUpdateList();
+  }
+}
+
+window.publishPriceUpdates = async function() {
+  if (!puActiveScreen) return;
+  var { shopId, screenId } = puActiveScreen;
+  
+  await update(ref(db, 'screens/' + shopId + '/' + screenId), {
+    priceFields: puFields,
+    priceFieldsUpdatedAt: Date.now()
+  });
+  
+  closeModal('priceUpdateModal');
+  showToast('📤 Fiyatlar yayınlandı · TV anında güncellenecek', 'success');
 }
 
 // ── INIT ──
