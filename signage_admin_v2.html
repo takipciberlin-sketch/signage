@@ -376,6 +376,9 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <div class="nav-item" onclick="showView('screens')">
         <span class="icon">📺</span> Ekranlar
       </div>
+      <div class="nav-item" onclick="showView('templates')">
+        <span class="icon">📋</span> Şablonlar
+      </div>
       <div class="nav-item" onclick="showView('menus')">
         <span class="icon">🍽️</span> Menü Yönetimi
       </div>
@@ -905,9 +908,12 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       
     </div>
 
-    <div class="modal-actions" style="margin-top:20px;">
-      <button class="btn btn-ghost" onclick="closeModal('priceFieldsModal')">İptal</button>
-      <button class="btn btn-primary" onclick="savePriceFields()">💾 Kaydet ve Yayınla</button>
+    <div class="modal-actions" style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;">
+      <button class="btn btn-ghost" onclick="saveAsTemplate()" style="background:rgba(100,100,255,0.08);border:1px solid rgba(100,100,255,0.2);color:#7c7cff;">📋 Şablon Olarak Kaydet</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('priceFieldsModal')">İptal</button>
+        <button class="btn btn-primary" onclick="savePriceFields()">💾 Kaydet ve Yayınla</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1029,6 +1035,13 @@ onValue(ref(db, 'screens'), snap => {
   renderCurrentView();
 });
 
+// ── Listen templates ──
+var templates = {};
+onValue(ref(db, 'templates'), snap => {
+  templates = snap.val() || {};
+  if (currentView === 'templates') renderTemplatesView();
+});
+
 // ── Render shop list ──
 function renderShopList() {
   const el = document.getElementById('shopList');
@@ -1087,6 +1100,7 @@ function renderCurrentView() {
   else if (currentView === 'screens') renderScreensView();
   else if (currentView === 'menus') renderMenusView();
   else if (currentView === 'payments') renderPaymentsView();
+  else if (currentView === 'templates') renderTemplatesView();
   else if (currentView === 'customers') renderCustomersView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
 }
@@ -2404,12 +2418,68 @@ window.quickPushAll = async function() {
 window.addScreen = async function(shopId) {
   const shopScreens = screens[shopId] || {};
   const n = Object.keys(shopScreens).length + 1;
+  
+  // Şablon seçimi
+  var templateOptions = '<option value="">Şablon Seçme (boş başla)</option>';
+  templateOptions += Object.entries(templates).map(function([id, t]) {
+    return '<option value="' + id + '">' + (t.name || 'İsimsiz') + ' (' + (t.priceFields || []).length + ' alan)</option>';
+  }).join('');
+  
+  var templateId = null;
+  if (Object.keys(templates).length > 0) {
+    var html = '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">📋 Şablon Seç (opsiyonel):</label><select id="templateSelect" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">' + templateOptions + '</select></div>';
+    
+    var choice = prompt('TV ismi:', 'Ekran ' + n);
+    if (!choice) return;
+    
+    // Şablon seçimi için basit prompt (modal yerine hızlıca)
+    var useTemplate = confirm('📋 Hazır şablon kullanmak ister misin?\n\nEVET = Şablon seç\nHAYIR = Boş başla');
+    
+    if (useTemplate && Object.keys(templates).length > 0) {
+      var tList = Object.entries(templates).map(function([id, t], i) {
+        return (i+1) + '. ' + t.name + ' (' + (t.priceFields || []).length + ' alan)';
+      }).join('\n');
+      
+      var tNum = prompt('Şablon seç (numara gir):\n\n' + tList, '1');
+      if (tNum) {
+        var idx = parseInt(tNum) - 1;
+        var tEntries = Object.entries(templates);
+        if (idx >= 0 && idx < tEntries.length) {
+          templateId = tEntries[idx][0];
+        }
+      }
+    }
+    
+    var screenName = choice;
+  } else {
+    var screenName = prompt('TV ismi:', 'Ekran ' + n);
+    if (!screenName) return;
+  }
+  
   const sid = 'screen_' + Date.now();
-  await set(ref(db, `screens/${shopId}/${sid}`), {
-    name: `Ekran ${n}`, shopId, menuUrl: '', menuName: 'Menü yüklenmedi',
-    lastSeen: null, online: false, createdAt: Date.now()
-  });
-  showToast('✓ Ekran eklendi', 'success');
+  var newScreen = {
+    name: screenName,
+    shopId: shopId,
+    menuUrl: '',
+    menuName: 'Menü yüklenmedi',
+    lastSeen: null,
+    online: false,
+    createdAt: Date.now()
+  };
+  
+  // Şablon seçildiyse fiyat alanlarını kopyala
+  if (templateId && templates[templateId]) {
+    var template = templates[templateId];
+    newScreen.priceFields = (template.priceFields || []).map(function(f) {
+      return Object.assign({}, f, { value: '0,00' }); // Fiyatlar sıfır
+    });
+    newScreen.priceFieldsUpdatedAt = Date.now();
+    showToast('✓ Ekran eklendi + "' + template.name + '" şablonu kopyalandı', 'success');
+  } else {
+    showToast('✓ Ekran eklendi', 'success');
+  }
+  
+  await set(ref(db, `screens/${shopId}/${sid}`), newScreen);
 }
 
 // ── PING / RESTART ──
@@ -2557,6 +2627,68 @@ async function uploadToCloudinary(file) {
     sendBtn.textContent = '📤 Gönder';
     showToast('⚠️ ' + err.message, 'error');
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ŞABLON YÖNETİMİ (📋 Master şablonlar)
+// ══════════════════════════════════════════════════════════════
+function renderTemplatesView() {
+  document.getElementById('mainContent').innerHTML = `
+    <div class="content-wrapper">
+      <div class="page-header">
+        <div class="page-title">📋 Şablon Yönetimi</div>
+        <button class="btn btn-primary" onclick="openNewTemplateModal()">+ Yeni Şablon</button>
+      </div>
+      
+      <div style="background:rgba(0,230,118,0.04);border:1px solid rgba(0,230,118,0.15);border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:var(--text);">
+        💡 <strong>Şablonlar:</strong> Müşterilere TV eklerken kullanılacak hazır menü yapıları. Fiyat alanları, animasyonlar ve video ayarları içerir.
+      </div>
+      
+      <div id="templatesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+        ${Object.keys(templates).length === 0 ? 
+          '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;">Henüz şablon yok. Yukarıdan "Yeni Şablon" ile oluşturabilirsin.</div>' :
+          Object.entries(templates).map(([id, t]) => `
+            <div class="template-card" style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+                <div>
+                  <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;">${t.name || 'İsimsiz Şablon'}</div>
+                  <div style="font-size:12px;color:var(--muted);">${t.description || 'Açıklama yok'}</div>
+                </div>
+                <button onclick="deleteTemplate('${id}')" style="background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.2);color:var(--red);padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;">🗑</button>
+              </div>
+              
+              <div style="display:flex;gap:12px;margin-bottom:12px;font-size:12px;">
+                <div style="background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:5px;flex:1;">
+                  <div style="color:var(--muted);font-size:10px;margin-bottom:2px;">Fiyat Alanı</div>
+                  <div style="color:var(--text);font-weight:600;">${(t.priceFields || []).length}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:5px;flex:1;">
+                  <div style="color:var(--muted);font-size:10px;margin-bottom:2px;">Animasyon</div>
+                  <div style="color:var(--text);font-weight:600;">${(t.priceFields || []).filter(f => f.animationType && f.animationType !== 'none').length}</div>
+                </div>
+              </div>
+              
+              <button onclick="editTemplate('${id}')" style="width:100%;background:rgba(64,196,255,0.08);border:1px solid rgba(64,196,255,0.2);color:#40c4ff;padding:8px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">✏️ Düzenle</button>
+            </div>
+          `).join('')
+        }
+      </div>
+    </div>
+  `;
+}
+
+window.openNewTemplateModal = function() {
+  alert('Şablon oluşturmak için:\n\n1. Bir TV\'nin fiyat alanlarını hazırla (📍 Alan butonu)\n2. Aşağıdaki kod ile şablon olarak kaydet:\n\nYakında UI eklenecek!');
+}
+
+window.editTemplate = function(templateId) {
+  alert('Şablon düzenleme yakında eklenecek!');
+}
+
+window.deleteTemplate = async function(templateId) {
+  if (!confirm('Bu şablonu silmek istediğinden emin misin?')) return;
+  await remove(ref(db, 'templates/' + templateId));
+  showToast('✓ Şablon silindi', 'success');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2868,6 +3000,39 @@ window.savePriceFields = async function() {
   
   closeModal('priceFieldsModal');
   showToast('✓ ' + pfFields.length + ' fiyat alanı kaydedildi ve yayınlandı', 'success');
+}
+
+// Şablon olarak kaydet
+window.saveAsTemplate = async function() {
+  if (!pfActiveScreen) return;
+  
+  // Etiket kontrolü
+  var emptyLabels = pfFields.filter(function(f) { return !f.label || f.label.trim() === ''; });
+  if (emptyLabels.length > 0) {
+    showToast('⚠️ Şablon oluşturmak için tüm alanlara etiket yazmalısın', 'error');
+    return;
+  }
+  
+  var name = prompt('Şablon ismi:', '');
+  if (!name || !name.trim()) return;
+  
+  var desc = prompt('Açıklama (opsiyonel):', '');
+  
+  // Fiyat değerlerini sıfırla
+  var templateFields = pfFields.map(function(f) {
+    return Object.assign({}, f, { value: '0,00' });
+  });
+  
+  var templateId = 'template_' + Date.now();
+  await set(ref(db, 'templates/' + templateId), {
+    id: templateId,
+    name: name.trim(),
+    description: desc ? desc.trim() : '',
+    priceFields: templateFields,
+    createdAt: Date.now()
+  });
+  
+  showToast('✓ Şablon "' + name + '" oluşturuldu', 'success');
 }
 
 // ══════════════════════════════════════════════════════════════
