@@ -851,7 +851,7 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
           <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:14px;">
             <div style="font-size:10px;color:var(--text2);margin-bottom:6px;">Gölge / Kontur</div>
             <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text);cursor:pointer;">
-              <input type="checkbox" id="pfShadow" checked> Yazı altına siyah gölge ekle
+              <input type="checkbox" id="pfShadow"> Yazı altına siyah gölge ekle
             </label>
           </div>
           
@@ -2543,7 +2543,7 @@ window.openPriceFieldsEditor = function(shopId, screenId) {
       color: '#FFD700',
       weight: '900',
       align: 'center',
-      shadow: true
+      shadow: false
     }, f);
   });
   
@@ -2598,7 +2598,7 @@ function setupPriceFieldsCanvas() {
       color: '#FFD700',
       weight: '900',             // Varsayılan: 900 (çok kalın)
       align: 'center',
-      shadow: true
+      shadow: false              // Varsayılan: kapalı (istersen aç)
     });
     
     pfSelectedIdx = pfFields.length - 1;
@@ -2716,7 +2716,7 @@ window.setPfAlign = function(align) {
   updatePriceFieldsPanel();
 }
 
-// Sağ panel input değişikliklerini dinle (debounced - gecikme önleme)
+// Sağ panel input değişikliklerini dinle (value debounced, diğerleri instant)
 var pfRenderTimeout = null;
 document.addEventListener('input', function(e) {
   if (pfSelectedIdx < 0 || !pfFields[pfSelectedIdx]) return;
@@ -2724,9 +2724,10 @@ document.addEventListener('input', function(e) {
   
   var f = pfFields[pfSelectedIdx];
   var changed = false;
+  var needsDebounce = false;
   
-  if (e.target.id === 'pfLabel') { f.label = e.target.value; changed = true; }
-  if (e.target.id === 'pfValue') { f.value = e.target.value; changed = true; }
+  if (e.target.id === 'pfLabel') { f.label = e.target.value; needsDebounce = true; changed = true; }
+  if (e.target.id === 'pfValue') { f.value = e.target.value; needsDebounce = true; changed = true; }
   if (e.target.id === 'pfFont') { f.font = e.target.value; changed = true; }
   if (e.target.id === 'pfSize') { f.size = parseInt(e.target.value) || 80; changed = true; }
   if (e.target.id === 'pfColor') { f.color = e.target.value; changed = true; }
@@ -2734,11 +2735,16 @@ document.addEventListener('input', function(e) {
   if (e.target.id === 'pfShadow') { f.shadow = e.target.checked; changed = true; }
   
   if (changed) {
-    // Debounce: 300ms bekle, sonra render et
-    clearTimeout(pfRenderTimeout);
-    pfRenderTimeout = setTimeout(function() {
+    if (needsDebounce) {
+      // Text inputlar için debounce (300ms)
+      clearTimeout(pfRenderTimeout);
+      pfRenderTimeout = setTimeout(function() {
+        renderPriceFieldsCanvas();
+      }, 300);
+    } else {
+      // Select, number, color, checkbox için anında render
       renderPriceFieldsCanvas();
-    }, 300);
+    }
   }
 });
 
