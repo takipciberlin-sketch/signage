@@ -399,6 +399,9 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
     <div class="sidebar-divider"></div>
 
     <div class="sidebar-section">
+      <div class="nav-item" onclick="showView('settings')">
+        <span class="icon">⚙️</span> Ayarlar
+      </div>
       <div class="nav-item" onclick="openAddShop()">
         <span class="icon">➕</span> Dükkân Ekle
       </div>
@@ -514,6 +517,12 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
         <div class="field-label">Aylık Ücret (€)</div>
         <input class="field-input" id="newShopFee" type="number" placeholder="Manuel gir">
       </div>
+    </div>
+    
+    <div class="menu-field" style="margin-top:12px;">
+      <div class="field-label">📅 Abonelik Başlangıç Tarihi</div>
+      <input class="field-input" id="newShopSubStart" type="date" value="${new Date().toISOString().split('T')[0]}">
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">İlk fatura bu tarihten 30 gün sonra oluşturulur</div>
     </div>
 
     <div class="modal-actions">
@@ -898,6 +907,7 @@ function renderCurrentView() {
   else if (currentView === 'menus') renderMenusView();
   else if (currentView === 'payments') renderPaymentsView();
   else if (currentView === 'customers') renderCustomersView();
+  else if (currentView === 'settings') renderSettingsView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
 }
 
@@ -1284,10 +1294,10 @@ function renderMenusView() {
 function getPaymentStatus(shop) {
   // Ödeme durumu hesapla
   const lastPaid = shop.lastPaidAt ? new Date(shop.lastPaidAt) : null;
-  const startDate = shop.createdAt ? new Date(shop.createdAt) : new Date();
+  const startDate = shop.subscriptionStart ? new Date(shop.subscriptionStart) : (shop.createdAt ? new Date(shop.createdAt) : new Date());
   const today = new Date();
 
-  // Son ödeme yoksa: ilk fatura tarihi = oluşturulma + 30 gün
+  // Son ödeme yoksa: ilk fatura tarihi = subscriptionStart + 30 gün
   // Son ödeme varsa: bir sonraki tarih = son ödeme + 30 gün
   let nextDueDate;
   if (lastPaid) {
@@ -1590,13 +1600,23 @@ try {
   if (savedCfg) INVOICE_CONFIG = Object.assign(INVOICE_CONFIG, JSON.parse(savedCfg));
 } catch(e) {}
 
+// Fatura sayacı (her yıl için ayrı)
+function getNextInvoiceNumber() {
+  const year = new Date().getFullYear();
+  const key = 'signageos_invoice_counter_' + year;
+  let counter = parseInt(localStorage.getItem(key)) || 0;
+  counter++;
+  localStorage.setItem(key, counter);
+  return year + '-' + String(counter).padStart(4, '0');
+}
+
 window.generateInvoice = function(shopId) {
   var shop = shops[shopId];
   if (!shop) { showToast('Dükkân bulunamadı', 'error'); return; }
 
   var now = new Date();
   var monat = now.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
-  var rechnungNr = 'SOS-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + shopId.slice(-4);
+  var rechnungNr = getNextInvoiceNumber();
   var datum = now.toLocaleDateString('de-DE');
   var faellig = new Date(now.getTime() + 14*24*60*60*1000).toLocaleDateString('de-DE');
   
@@ -1639,6 +1659,7 @@ window.generateInvoice = function(shopId) {
     + (INVOICE_CONFIG.inhaber ? 'Inhaber: ' + INVOICE_CONFIG.inhaber + '<br>' : '')
     + INVOICE_CONFIG.adresse + '<br>'
     + (INVOICE_CONFIG.telefon ? 'Tel: ' + INVOICE_CONFIG.telefon + '<br>' : '')
+    + (INVOICE_CONFIG.website ? INVOICE_CONFIG.website + '<br>' : '')
     + INVOICE_CONFIG.email
     + '</div></div>'
     + '<div class="to">'
@@ -2166,6 +2187,7 @@ window.addShop = async function() {
   const iban      = document.getElementById('newShopIban').value.trim();
   const screens_  = parseInt(document.getElementById('newShopScreens').value) || 1;
   const fee       = parseInt(document.getElementById('newShopFee').value) || 0;
+  const subStart  = document.getElementById('newShopSubStart').value;
 
   if (!name) { showToast('Dükkân adı boş olamaz', 'error'); return; }
 
@@ -2178,6 +2200,7 @@ window.addShop = async function() {
       ownerName: owner, ownerEmail: email,
       ownerPhone: phone, ownerWhatsapp: whatsapp,
       taxId, iban,
+      subscriptionStart: subStart ? new Date(subStart).getTime() : Date.now(),
       updatedAt: Date.now()
     });
 
@@ -2217,6 +2240,7 @@ window.addShop = async function() {
     ownerName: owner, ownerEmail: email,
     ownerPhone: phone, ownerWhatsapp: whatsapp,
     taxId, iban,
+    subscriptionStart: subStart ? new Date(subStart).getTime() : Date.now(),
     createdAt: Date.now(), active: true
   });
 
@@ -2443,6 +2467,102 @@ async function uploadToCloudinary(file) {
     sendBtn.textContent = '📤 Gönder';
     showToast('⚠️ ' + err.message, 'error');
   }
+}
+
+// ── AYARLAR (SETTINGS) ──
+function renderSettingsView() {
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">⚙️ Ayarlar</div>
+      <div class="page-sub">Fatura bilgileri · Sistem ayarları</div>
+    </div>
+  </div>
+
+  <div class="section-title">📄 Fatura Bilgileri</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div class="field-label">Firma İsmi</div>
+        <input type="text" id="settingFirma" class="field-input" value="${INVOICE_CONFIG.firma || ''}" placeholder="SignageOS Berlin">
+      </div>
+      <div>
+        <div class="field-label">İnhaber / Sahip</div>
+        <input type="text" id="settingInhaber" class="field-input" value="${INVOICE_CONFIG.inhaber || ''}" placeholder="Ocak">
+      </div>
+      <div>
+        <div class="field-label">Adres</div>
+        <input type="text" id="settingAdresse" class="field-input" value="${INVOICE_CONFIG.adresse || ''}" placeholder="Berlin, Deutschland">
+      </div>
+      <div>
+        <div class="field-label">Telefon</div>
+        <input type="text" id="settingTelefon" class="field-input" value="${INVOICE_CONFIG.telefon || ''}" placeholder="+49 30 1234567">
+      </div>
+      <div>
+        <div class="field-label">E-Mail</div>
+        <input type="email" id="settingEmail" class="field-input" value="${INVOICE_CONFIG.email || ''}" placeholder="info@signageos.de">
+      </div>
+      <div>
+        <div class="field-label">Website</div>
+        <input type="text" id="settingWebsite" class="field-input" value="${INVOICE_CONFIG.website || ''}" placeholder="www.signageos.de">
+      </div>
+      <div>
+        <div class="field-label">IBAN</div>
+        <input type="text" id="settingIban" class="field-input" value="${INVOICE_CONFIG.iban || ''}" placeholder="DE00 0000 0000 0000 0000 00">
+      </div>
+      <div>
+        <div class="field-label">BIC</div>
+        <input type="text" id="settingBic" class="field-input" value="${INVOICE_CONFIG.bic || ''}" placeholder="DEUTDEDB">
+      </div>
+      <div>
+        <div class="field-label">Steuernummer</div>
+        <input type="text" id="settingSteuernr" class="field-input" value="${INVOICE_CONFIG.steuernr || ''}" placeholder="12345/67890">
+      </div>
+      <div>
+        <div class="field-label">USt-IdNr.</div>
+        <input type="text" id="settingUstId" class="field-input" value="${INVOICE_CONFIG.ustId || ''}" placeholder="DE123456789">
+      </div>
+    </div>
+    <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+      <button class="btn btn-primary" onclick="saveInvoiceSettings()">💾 Kaydet</button>
+    </div>
+  </div>
+
+  <div class="section-title">ℹ️ Sistem Bilgileri</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;">
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:12px;font-size:13px;">
+      <div style="color:var(--text2);">Toplam Dükkân:</div>
+      <div style="color:var(--text);font-weight:600;">${Object.keys(shops).length}</div>
+      
+      <div style="color:var(--text2);">Toplam Ekran:</div>
+      <div style="color:var(--text);font-weight:600;">${Object.values(screens).flatMap(s => Object.values(s)).length}</div>
+      
+      <div style="color:var(--text2);">Firebase Bağlantı:</div>
+      <div style="color:var(--green);font-weight:600;">● Aktif</div>
+      
+      <div style="color:var(--text2);">Versiyon:</div>
+      <div style="color:var(--text);font-weight:600;">SignageOS v2.0</div>
+    </div>
+  </div>
+  `;
+}
+
+window.saveInvoiceSettings = function() {
+  INVOICE_CONFIG = {
+    firma: document.getElementById('settingFirma').value.trim(),
+    inhaber: document.getElementById('settingInhaber').value.trim(),
+    adresse: document.getElementById('settingAdresse').value.trim(),
+    telefon: document.getElementById('settingTelefon').value.trim(),
+    email: document.getElementById('settingEmail').value.trim(),
+    website: document.getElementById('settingWebsite').value.trim(),
+    iban: document.getElementById('settingIban').value.trim(),
+    bic: document.getElementById('settingBic').value.trim(),
+    steuernr: document.getElementById('settingSteuernr').value.trim(),
+    ustId: document.getElementById('settingUstId').value.trim()
+  };
+  
+  localStorage.setItem('signageos_invoice_cfg', JSON.stringify(INVOICE_CONFIG));
+  showToast('✓ Fatura ayarları kaydedildi', 'success');
 }
 
 // ── INIT ──
