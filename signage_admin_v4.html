@@ -968,7 +968,7 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <!-- SOL: GÖRSEL CANVAS -->
       <div>
         <div style="background:rgba(255,140,0,0.05);border:1px solid rgba(255,140,0,0.2);border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:var(--text);line-height:1.5;">
-          💡 <strong style="color:#ff8c00;">Görsele tıkla</strong> → o noktaya yeni efekt eklenir. Efekti <strong style="color:#ff8c00;">sürükleyerek</strong> taşıyabilir, <strong style="color:#ff8c00;">köşelerinden tutarak</strong> boyutlandırabilirsin.
+          💡 <strong style="color:#ff8c00;">1.</strong> Görsele tıkla → boş kare belirir &nbsp;·&nbsp; <strong style="color:#ff8c00;">2.</strong> Sağdan efekt seç (🔥💨🌡️⭐) &nbsp;·&nbsp; <strong style="color:#ff8c00;">3.</strong> Sürükle/boyutlandır
         </div>
         
         <div id="efCanvasContainer" style="background:#000;border:2px solid rgba(255,140,0,0.3);border-radius:8px;position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;cursor:crosshair;">
@@ -996,7 +996,8 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
           
           <!-- TÜR SEÇİMİ -->
           <div style="background:rgba(255,140,0,0.05);border:1px solid rgba(255,140,0,0.2);border-radius:8px;padding:12px;margin-bottom:14px;">
-            <div style="font-size:10px;font-weight:700;color:#ff8c00;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Efekt Türü</div>
+            <div style="font-size:10px;font-weight:700;color:#ff8c00;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Efekt Türü</div>
+            <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">👇 Bir efekt seç → kareye yerleşir</div>
             
             <div style="display:flex;flex-direction:column;gap:4px;">
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer;padding:6px;border-radius:4px;background:var(--s2);">
@@ -3385,7 +3386,7 @@ window.openEffectsEditor = function(shopId, screenId) {
     
     efEffects.push({
       id: 'ef_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
-      type: 'fire',
+      type: 'none',
       x: x,
       y: y,
       width: 15,
@@ -3485,6 +3486,15 @@ function renderEffectsCanvas() {
         'font-size:11px;color:#aaa;font-family:Inter,sans-serif;text-align:center;">' +
         '✨ Lottie' +
         '</div>';
+    } else {
+      // type === 'none' veya tanımsız → BOŞ KARE (sağdan efekt seçilmeyi bekliyor)
+      effectInner =
+        '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'background:rgba(255,140,0,0.08);border:2px dashed rgba(255,140,0,0.5);border-radius:6px;' +
+        'font-size:11px;color:#ff8c00;font-family:Inter,sans-serif;text-align:center;gap:4px;padding:4px;">' +
+        '<div style="font-size:20px;">✨</div>' +
+        '<div>Sağdan<br>efekt seç</div>' +
+        '</div>';
     }
     
     // İkon (sağ üst köşede tür göstergesi)
@@ -3494,6 +3504,7 @@ function renderEffectsCanvas() {
     else if (e.type === 'heat') typeIcon = '🌡️';
     else if (e.type === 'sparkle') typeIcon = '⭐';
     else if (e.type === 'custom') typeIcon = '📂';
+    else typeIcon = '?';
     
     // Resize handles (sadece seçiliyken göster)
     var handles = isSel ? 
