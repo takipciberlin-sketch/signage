@@ -91,6 +91,7 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
   font-size:48px; font-weight:700;
   animation:tickerScroll 60s linear infinite;
   padding-left:100%;
+  display:inline-flex; align-items:center;
 }
 .scroll-content span { padding:0 80px; }
 @keyframes tickerScroll {
@@ -436,23 +437,48 @@ function updateTicker(data) {
   
   // Renk
   var color = data.tickerColor || '#FFD700';
-  content.style.color = color;
   
-  // Yazıları birleştir
+  // Yazıları ve resimleri birleştir (her mesajın kendi resmi)
   var msgs = data.tickerMessages || [];
-  if (typeof msgs === 'string') msgs = [msgs];
-  if (msgs.length === 0) msgs = ['Hoş Geldiniz'];
+  if (typeof msgs === 'string') msgs = [{ text: msgs, image: '' }];
   
+  // Eski format desteği
+  var oldImages = data.tickerImages || [];
+  if (!Array.isArray(oldImages)) oldImages = [];
+  
+  // Normalize: her mesajı {text, image} haline getir
+  msgs = msgs.map(function(m, i) {
+    if (typeof m === 'string') {
+      return { text: m, image: (oldImages[i] && oldImages[i].url) || '' };
+    }
+    return { text: m.text || '', image: m.image || '' };
+  });
+  
+  if (msgs.length === 0) msgs = [{ text: 'Hoş Geldiniz', image: '' }];
+  
+  // Her satırda: resim (varsa) + yazı
   var newKey = JSON.stringify(msgs) + speed + color;
   if (newKey !== lastTickerKey) {
     lastTickerKey = newKey;
-    // Yazıları • ile birleştir, 3 kez tekrar et (akıcı görünüm için)
-    var combined = msgs.map(function(m) { return '<span>' + m + ' • </span>'; }).join('');
+    
+    var items = msgs.map(function(m) {
+      var item = '';
+      if (m.image) {
+        item += '<span style="display:inline-flex;align-items:center;padding:0 20px 0 40px;">' +
+          '<img src="' + m.image + '" style="height:90px;width:auto;max-width:90px;object-fit:contain;vertical-align:middle;border-radius:6px;" />' +
+        '</span>';
+      }
+      item += '<span style="color:' + color + ';padding:0 40px 0 ' + (m.image ? '0' : '40px') + ';">' + (m.text || '') + ' •</span>';
+      return item;
+    });
+    
+    var combined = items.join('');
+    // Akıcı görünüm için 3 kez tekrar
     content.innerHTML = combined + combined + combined;
   }
   
   // Hava durumu
-  var showWeather = data.weatherEnabled !== false; // default true
+  var showWeather = data.weatherEnabled !== false;
   var weatherEl = document.getElementById('tickerWeather');
   
   if (showWeather && data.tickerCity) {

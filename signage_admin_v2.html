@@ -692,30 +692,18 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <div style="font-size:11px;color:var(--text2);margin-top:6px;">Hava durumu otomatik gelir, API key gerekmez</div>
     </div>
 
-    <!-- ÜRÜN RESİMLERİ -->
-    <div style="background:rgba(0,230,118,0.04);border:1px solid rgba(0,230,118,0.2);border-radius:10px;padding:14px;margin-top:12px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <span style="font-size:18px;">🖼️</span>
-        <span style="font-size:13px;font-weight:700;color:var(--green);">Ürün Resimleri</span>
-        <span style="font-size:11px;color:var(--text2);margin-left:4px;">(kayan şeritte yazıdan önce gösterilir, PNG transparent destekli)</span>
-      </div>
-      <div id="tickerImageList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
-      <button onclick="uploadTickerImage()" style="width:100%;padding:10px;border-radius:6px;border:1px dashed var(--dim);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--text2)'">
-        💻 Bilgisayardan Yükle
-      </button>
-      <input type="file" id="tickerImageUploadInput" accept="image/*" style="display:none;" onchange="handleTickerImageFile(this.files[0])">
-    </div>
-
-    <!-- KAYAN YAZI -->
+    <!-- KAYAN YAZILAR + RESİMLER -->
     <div style="background:rgba(255,193,7,0.05);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:14px;margin-top:12px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <span style="font-size:18px;">📢</span>
         <span style="font-size:13px;font-weight:700;color:#ffc107;">Kayan Yazılar</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:4px;">(her yazıya isteğe bağlı resim eklenebilir)</span>
       </div>
       <div id="tickerMessageList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
       <button onclick="addTickerMessage()" style="width:100%;padding:10px;border-radius:6px;border:1px dashed var(--dim);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='#ffc107';this.style.color='#ffc107'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--text2)'">
         + Yeni Yazı Ekle
       </button>
+      <input type="file" id="tickerImageUploadInput" accept="image/*" style="display:none;" onchange="handleTickerImageFile(this.files[0])">
     </div>
 
     <!-- AYARLAR -->
@@ -1874,7 +1862,7 @@ window.saveScreenSchedule = async function() {
 var activeTickerScreen = null;
 var tickerEnabledTemp = false;
 window.tickerMessages = [];
-window.tickerImages = [];
+window.uploadTargetIdx = null; // Hangi mesaja resim yükleniyor
 
 window.openTickerModal = function(shopId, screenId) {
   activeTickerScreen = { shopId, screenId };
@@ -1882,11 +1870,23 @@ window.openTickerModal = function(shopId, screenId) {
   document.getElementById('tickerModalSub').textContent = (screen?.name || screenId) + ' için alt bant ayarı';
   
   tickerEnabledTemp = screen?.tickerEnabled || false;
-  tickerMessages = screen?.tickerMessages || [];
-  if (typeof tickerMessages === 'string') tickerMessages = [tickerMessages];
   
-  tickerImages = screen?.tickerImages || [];
-  if (!Array.isArray(tickerImages)) tickerImages = [];
+  // Eski format → yeni format dönüştür
+  var msgs = screen?.tickerMessages || [];
+  if (typeof msgs === 'string') msgs = [msgs];
+  var imgs = screen?.tickerImages || [];
+  if (!Array.isArray(imgs)) imgs = [];
+  
+  // Birleştir: her mesaj {text, image} objesi olur
+  tickerMessages = msgs.map(function(m, i) {
+    if (typeof m === 'string') {
+      // Eski format - resim var mı eşleştir
+      return { text: m, image: imgs[i]?.url || '' };
+    } else {
+      // Zaten yeni format
+      return { text: m.text || '', image: m.image || '' };
+    }
+  });
 
   document.getElementById('tickerCity').value = screen?.tickerCity || 'Berlin';
   document.getElementById('tickerColor').value = screen?.tickerColor || '#FFD700';
@@ -1895,7 +1895,6 @@ window.openTickerModal = function(shopId, screenId) {
   
   updateTickerToggleUI();
   renderTickerMessages();
-  renderTickerImages();
   updateTickerPreview();
   
   document.getElementById('tickerModal').classList.add('open');
@@ -1918,23 +1917,22 @@ function updateTickerToggleUI() {
   }
 }
 
-// ── ÜRÜN RESİMLERİ ──
-window.addTickerImage = function() {
-  tickerImages.push({ url: '', label: '' });
-  renderTickerImages();
-}
-
-window.removeTickerImage = function(idx) {
-  tickerImages.splice(idx, 1);
-  renderTickerImages();
-}
-
-window.uploadTickerImage = function() {
+// ── HER MESAJA RESİM YÜKLE ──
+window.uploadImageForMessage = function(idx) {
+  uploadTargetIdx = idx;
   document.getElementById('tickerImageUploadInput').click();
 }
 
+window.removeImageFromMessage = function(idx) {
+  if (tickerMessages[idx]) {
+    tickerMessages[idx].image = '';
+    renderTickerMessages();
+  }
+}
+
 window.handleTickerImageFile = async function(file) {
-  if (!file) return;
+  if (!file || uploadTargetIdx === null) return;
+  var idx = uploadTargetIdx;
   showToast('⏳ Resim yükleniyor...', 'success');
   var formData = new FormData();
   formData.append('file', file);
@@ -1942,45 +1940,20 @@ window.handleTickerImageFile = async function(file) {
   try {
     var res = await fetch('https://api.cloudinary.com/v1_1/dovyxuyhe/auto/upload', { method:'POST', body:formData });
     var json = await res.json();
-    if (json.secure_url) {
-      tickerImages.push({ url: json.secure_url, label: file.name.replace(/\.[^.]+$/, '') });
-      renderTickerImages();
-      showToast('✅ Resim yüklendi', 'success');
+    if (json.secure_url && tickerMessages[idx]) {
+      tickerMessages[idx].image = json.secure_url;
+      renderTickerMessages();
+      showToast('✅ Resim eklendi', 'success');
     }
   } catch(e) {
     showToast('⚠️ Yükleme başarısız', 'error');
   }
-}
-
-function renderTickerImages() {
-  var list = document.getElementById('tickerImageList');
-  if (!list) return;
-  if (tickerImages.length === 0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--text2);text-align:center;padding:10px;">Henüz resim yok. Bilgisayardan yükle veya URL ekle</div>';
-    return;
-  }
-  list.innerHTML = tickerImages.map(function(img, i) {
-    var safeLabel = (img.label || '').replace(/"/g, '&quot;');
-    var safeUrl = (img.url || '').replace(/"/g, '&quot;');
-    return '<div style="display:flex;gap:10px;align-items:center;background:var(--s2);border-radius:8px;padding:10px;">' +
-      // Önizleme
-      (img.url
-        ? '<img src="' + safeUrl + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,0.05);flex-shrink:0;">'
-        : '<div style="width:48px;height:48px;background:var(--s3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🖼️</div>'
-      ) +
-      // Etiket (isim)
-      '<div style="flex:1;">' +
-        '<div style="font-size:13px;font-weight:600;color:var(--text);">' + (img.label || 'Resim ' + (i+1)) + '</div>' +
-        '<div style="font-size:10px;color:var(--muted);margin-top:2px;">✅ Yüklendi</div>' +
-      '</div>' +
-      // Sil butonu
-      '<button onclick="removeTickerImage(' + i + ')" style="padding:6px 10px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:6px;font-size:12px;cursor:pointer;flex-shrink:0;">🗑</button>' +
-    '</div>';
-  }).join('');
+  uploadTargetIdx = null;
+  document.getElementById('tickerImageUploadInput').value = '';
 }
 
 window.addTickerMessage = function() {
-  tickerMessages.push('');
+  tickerMessages.push({ text: '', image: '' });
   renderTickerMessages();
 }
 
@@ -1998,11 +1971,25 @@ function renderTickerMessages() {
     return;
   }
   list.innerHTML = tickerMessages.map(function(msg, i) {
-    var safe = (msg || '').replace(/"/g, '&quot;');
-    return '<div style="display:flex;gap:8px;align-items:center;background:var(--s2);border-radius:6px;padding:8px;">' +
+    var safeText = (msg.text || '').replace(/"/g, '&quot;');
+    var imgUrl = msg.image || '';
+    
+    // Resim alanı: ya küçük önizleme + sil butonu, ya da + ekle butonu
+    var imageBox;
+    if (imgUrl) {
+      imageBox = '<div style="position:relative;width:48px;height:48px;flex-shrink:0;">' +
+        '<img src="' + imgUrl + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,0.05);border:1px solid var(--border);">' +
+        '<button onclick="removeImageFromMessage(' + i + ')" title="Resmi kaldır" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#ff5252;color:#fff;border:none;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>' +
+      '</div>';
+    } else {
+      imageBox = '<button onclick="uploadImageForMessage(' + i + ')" title="Resim ekle" style="width:48px;height:48px;border-radius:6px;border:1px dashed var(--dim);background:transparent;color:var(--text2);cursor:pointer;font-size:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor=\'var(--green)\';this.style.color=\'var(--green)\'" onmouseout="this.style.borderColor=\'var(--dim)\';this.style.color=\'var(--text2)\'">🖼️</button>';
+    }
+    
+    return '<div style="display:flex;gap:10px;align-items:center;background:var(--s2);border-radius:8px;padding:10px;">' +
       '<span style="color:#ffc107;font-size:12px;font-weight:700;min-width:18px;">' + (i+1) + '</span>' +
-      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safe + '" style="flex:1;" oninput="window.tickerMessages[' + i + ']=this.value;window.updateTickerPreview()">' +
-      '<button onclick="removeTickerMessage(' + i + ')" style="padding:6px 8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:4px;font-size:12px;cursor:pointer;">✕</button>' +
+      imageBox +
+      '<input class="field-input" placeholder="Örn: Burger + Cola sadece 9,99€!" value="' + safeText + '" style="flex:1;" oninput="window.tickerMessages[' + i + '].text=this.value;window.updateTickerPreview()">' +
+      '<button onclick="removeTickerMessage(' + i + ')" style="padding:6px 10px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:6px;font-size:12px;cursor:pointer;flex-shrink:0;">✕</button>' +
     '</div>';
   }).join('');
 }
@@ -2011,10 +1998,10 @@ window.updateTickerPreview = function() {
   var preview = document.getElementById('tickerPreviewText');
   if (!preview) return;
   var color = document.getElementById('tickerColor').value;
-  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
-  if (msgs.length === 0) msgs = ['Hoş Geldiniz'];
+  var msgs = tickerMessages.filter(function(m) { return m.text && m.text.trim(); });
+  if (msgs.length === 0) { preview.textContent = 'Hoş Geldiniz'; return; }
   preview.style.color = color;
-  preview.textContent = msgs.join(' • ') + ' • ' + msgs.join(' • ');
+  preview.textContent = msgs.map(function(m) { return m.text; }).join(' • ') + ' • ' + msgs.map(function(m) { return m.text; }).join(' • ');
 }
 
 // Renk değişince önizleme güncelle
@@ -2028,16 +2015,19 @@ window.saveTickerSettings = async function() {
   if (!activeTickerScreen) return;
   var { shopId, screenId } = activeTickerScreen;
   
-  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
-  var imgs = tickerImages.filter(function(img) { return img.url && img.url.trim(); });
+  // Boş yazıları filtrele (resim olsa bile yazı yoksa atla)
+  var filtered = tickerMessages.filter(function(m) { return m.text && m.text.trim(); });
+  
+  // Geri uyumluluk: hem yeni format (objects) hem eski format (strings + tickerImages) yaz
+  var msgsForSave = filtered.length > 0 ? filtered.map(function(m) { return { text: m.text.trim(), image: m.image || '' }; }) : [{ text: 'Hoş Geldiniz', image: '' }];
   
   var data = {
     tickerEnabled: tickerEnabledTemp,
     tickerCity: document.getElementById('tickerCity').value.trim() || 'Berlin',
     tickerColor: document.getElementById('tickerColor').value,
     tickerSpeed: parseInt(document.getElementById('tickerSpeed').value),
-    tickerMessages: msgs.length > 0 ? msgs : ['Hoş Geldiniz'],
-    tickerImages: imgs,
+    tickerMessages: msgsForSave,
+    tickerImages: [], // Eski alanı temizle (artık her mesajla birlikte)
     weatherEnabled: document.getElementById('tickerWeatherEnabled').checked
   };
   
