@@ -794,24 +794,26 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
           <div style="font-size:10px;color:var(--text2);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Seçili: <span id="pfSelectedNum" style="color:var(--green);">Fiyat 1</span></div>
           
           <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
-            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Etiket (kendi notun)</div>
-            <input id="pfLabel" class="field-input" placeholder="Örn: Big Burger Fiyatı" style="font-size:12px;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Etiket (zorunlu) <span style="color:var(--red);">*</span></div>
+            <input id="pfLabel" class="field-input" placeholder="Örn: Chicken Wings" style="font-size:12px;">
           </div>
           
           <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
-            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Varsayılan Değer</div>
-            <input id="pfValue" class="field-input" placeholder="Örn: 9,99€" style="font-size:13px;font-weight:700;color:#FFD700;">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Fiyat (€ opsiyonel)</div>
+            <input id="pfValue" class="field-input" placeholder="Örn: 2,49 veya 2,49€" style="font-size:13px;font-weight:700;color:#FFD700;">
           </div>
           
           <div style="background:var(--s2);border-radius:6px;padding:10px;margin-bottom:8px;">
             <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Font</div>
             <select id="pfFont" class="field-input" style="font-size:11px;">
+              <option value="Impact">Impact (Bold)</option>
+              <option value="Bebas Neue">Bebas Neue (Bold)</option>
+              <option value="Anton">Anton (Bold)</option>
+              <option value="Oswald">Oswald (Bold)</option>
+              <option value="Roboto Condensed">Roboto Condensed</option>
+              <option value="Arial Black">Arial Black</option>
               <option value="Inter">Inter</option>
-              <option value="Bebas Neue">Bebas Neue</option>
-              <option value="Oswald">Oswald</option>
               <option value="Roboto">Roboto</option>
-              <option value="Arial">Arial</option>
-              <option value="Impact">Impact</option>
             </select>
           </div>
           
@@ -2533,13 +2535,13 @@ window.openPriceFieldsEditor = function(shopId, screenId) {
   // Mevcut alanları yükle
   pfFields = (screen?.priceFields || []).map(function(f) {
     return Object.assign({
-      label: 'Fiyat',
-      value: '0,00€',
+      label: '',
+      value: '0,00',
       x: 50, y: 50,         // % cinsinden konum
-      font: 'Inter',
-      size: 80,
+      font: 'Impact',
+      size: 120,
       color: '#FFD700',
-      weight: '700',
+      weight: '900',
       align: 'center',
       shadow: true
     }, f);
@@ -2587,14 +2589,14 @@ function setupPriceFieldsCanvas() {
     var y = ((e.clientY - rect.top) / rect.height) * 100;
     
     pfFields.push({
-      label: 'Fiyat ' + (pfFields.length + 1),
-      value: '0,00€',
+      label: '',                 // Boş - kullanıcı doldurmalı (zorunlu)
+      value: '0,00',             // € yok - isteğe bağlı eklenecek
       x: Math.max(5, Math.min(95, x)),
       y: Math.max(5, Math.min(95, y)),
-      font: 'Inter',
-      size: 80,
+      font: 'Impact',           // Varsayılan: Impact (kalın)
+      size: 120,                 // Varsayılan: 120px (daha büyük)
       color: '#FFD700',
-      weight: '700',
+      weight: '900',             // Varsayılan: 900 (çok kalın)
       align: 'center',
       shadow: true
     });
@@ -2611,7 +2613,12 @@ function renderPriceFieldsCanvas() {
   
   layer.innerHTML = pfFields.map(function(f, i) {
     var isSel = i === pfSelectedIdx;
-    var shadow = f.shadow ? 'text-shadow:2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;' : '';
+    // Güçlü gölge - McDonald's tarzı (4 yönde siyah kontur + bulanık gölge)
+    var shadow = f.shadow ? 
+      'text-shadow:' +
+      '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000,' + // 4 yön kontur
+      '0 0 12px rgba(0,0,0,0.9), 0 4px 8px rgba(0,0,0,0.7);' :               // Bulanık gölge
+      '';
     var transform = f.align === 'center' ? 'translate(-50%, -50%)' : 
                     f.align === 'right' ? 'translate(-100%, -50%)' : 
                     'translate(0, -50%)';
@@ -2619,6 +2626,9 @@ function renderPriceFieldsCanvas() {
     // Önizleme boyutunu küçült (3840px → ~1100px container, oran ~0.29)
     // Ama burada % bazlı çalıştığımız için font-size'ı container'a göre ölçeklendir
     var displaySize = (f.size / 3840) * 100; // viewport width'in yüzdesi olarak
+    
+    // Eğer label boşsa ve value da boşsa placeholder göster
+    var displayValue = f.value || (f.label ? '' : '0,00');
     
     return '<div class="pf-field" data-idx="' + i + '" ' +
       'style="position:absolute;left:' + f.x + '%;top:' + f.y + '%;' +
@@ -2631,7 +2641,7 @@ function renderPriceFieldsCanvas() {
       'padding:2px 6px;' +
       (isSel ? 'outline:2px solid #00e676;outline-offset:2px;background:rgba(0,230,118,0.1);' : 'outline:1px dashed rgba(255,255,255,0.3);') +
       '" onmousedown="startDragPriceField(event,' + i + ')">' +
-      f.value +
+      displayValue +
       '<span style="position:absolute;top:-8px;left:-8px;background:' + (isSel ? '#00e676' : '#FFD700') + ';color:#000;font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;text-shadow:none;">' + (i+1) + '</span>' +
       '</div>';
   }).join('');
@@ -2706,7 +2716,8 @@ window.setPfAlign = function(align) {
   updatePriceFieldsPanel();
 }
 
-// Sağ panel input değişikliklerini dinle
+// Sağ panel input değişikliklerini dinle (debounced - gecikme önleme)
+var pfRenderTimeout = null;
 document.addEventListener('input', function(e) {
   if (pfSelectedIdx < 0 || !pfFields[pfSelectedIdx]) return;
   if (!document.getElementById('priceFieldsModal').classList.contains('open')) return;
@@ -2722,7 +2733,13 @@ document.addEventListener('input', function(e) {
   if (e.target.id === 'pfWeight') { f.weight = e.target.value; changed = true; }
   if (e.target.id === 'pfShadow') { f.shadow = e.target.checked; changed = true; }
   
-  if (changed) renderPriceFieldsCanvas();
+  if (changed) {
+    // Debounce: 300ms bekle, sonra render et
+    clearTimeout(pfRenderTimeout);
+    pfRenderTimeout = setTimeout(function() {
+      renderPriceFieldsCanvas();
+    }, 300);
+  }
 });
 
 window.deleteSelectedPriceField = function() {
@@ -2738,7 +2755,14 @@ window.savePriceFields = async function() {
   if (!pfActiveScreen) return;
   var { shopId, screenId } = pfActiveScreen;
   
-  // Boş value'ları temizleme - hepsini kaydet (varsayılan 0,00€ olabilir)
+  // Etiket zorunluluğu kontrolü
+  var emptyLabels = pfFields.filter(function(f) { return !f.label || f.label.trim() === ''; });
+  if (emptyLabels.length > 0) {
+    showToast('⚠️ Tüm fiyat alanlarına etiket (isim) yazmalısın', 'error');
+    return;
+  }
+  
+  // Boş value'ları temizleme - hepsini kaydet (varsayılan 0,00 olabilir)
   await update(ref(db, 'screens/' + shopId + '/' + screenId), {
     priceFields: pfFields,
     priceFieldsUpdatedAt: Date.now()
@@ -2815,18 +2839,20 @@ function renderPriceUpdateList() {
   document.getElementById('puFieldsList').innerHTML = puFields.map(function(f, i) {
     var orig = puOriginal[i];
     var changed = orig && f.value !== orig.value;
+    var displayLabel = (f.label && f.label.trim()) || ('Fiyat ' + (i+1));
     
     return '<div style="background:' + (changed ? 'rgba(255,193,7,0.05)' : 'rgba(255,255,255,0.03)') + 
       ';border-left:3px solid ' + (changed ? '#ffc107' : 'rgba(255,255,255,0.1)') + 
       ';border-radius:5px;padding:8px 10px;display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;">' +
       
       '<div>' +
-        '<div style="color:' + (changed ? 'var(--text)' : 'var(--text2)') + ';font-size:12px;font-weight:600;">' + (f.label || ('Fiyat ' + (i+1))) + '</div>' +
+        '<div style="color:' + (changed ? 'var(--text)' : 'var(--text2)') + ';font-size:12px;font-weight:600;">' + displayLabel + '</div>' +
         (changed ? '<div style="color:var(--text2);font-size:10px;">eski: ' + orig.value + '</div>' : '') +
       '</div>' +
       
       '<input type="text" value="' + (f.value || '').replace(/"/g, '&quot;') + 
         '" oninput="updatePriceValue(' + i + ', this.value)" ' +
+        'placeholder="Örn: 2,49" ' +
         'style="background:' + (changed ? 'rgba(255,193,7,0.15)' : 'rgba(255,255,255,0.05)') + 
         ';border:1px solid ' + (changed ? '#ffc107' : 'rgba(255,255,255,0.1)') + 
         ';color:' + (changed ? '#ffc107' : 'var(--text)') + 
