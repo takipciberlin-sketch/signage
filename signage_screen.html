@@ -437,6 +437,10 @@ function updateTicker(data) {
   
   // Renk
   var color = data.tickerColor || '#FFD700';
+  var bgColor = data.tickerBgColor || '#000000';
+  
+  // Arkaplan rengini uygula
+  bar.style.background = 'linear-gradient(90deg, ' + bgColor + ', ' + bgColor + 'dd)';
   
   // Yazıları ve resimleri birleştir (her mesajın kendi resmi)
   var msgs = data.tickerMessages || [];

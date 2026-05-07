@@ -707,13 +707,27 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
     </div>
 
     <!-- AYARLAR -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
       <div>
-        <div class="field-label">Renk</div>
+        <div class="field-label">Yazı Rengi</div>
         <select id="tickerColor" class="field-input" style="margin-top:6px;">
           <option value="#FFD700">🟡 Sarı</option>
           <option value="#FF5252">🔴 Kırmızı</option>
           <option value="#00E676">🟢 Yeşil</option>
+          <option value="#FFFFFF">⚪ Beyaz</option>
+          <option value="#40C4FF">🔵 Mavi</option>
+          <option value="#FF9800">🟠 Turuncu</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-label">Arkaplan Rengi</div>
+        <select id="tickerBgColor" class="field-input" style="margin-top:6px;">
+          <option value="#000000">⚫ Siyah</option>
+          <option value="#1a1a1a">⬛ Koyu Gri</option>
+          <option value="#2c3e50">🔷 Lacivert</option>
+          <option value="#1e3a2e">🟩 Koyu Yeşil</option>
+          <option value="#3e2723">🟫 Kahverengi</option>
+          <option value="#b71c1c">🔴 Koyu Kırmızı</option>
           <option value="#FFFFFF">⚪ Beyaz</option>
         </select>
       </div>
@@ -1890,6 +1904,7 @@ window.openTickerModal = function(shopId, screenId) {
 
   document.getElementById('tickerCity').value = screen?.tickerCity || 'Berlin';
   document.getElementById('tickerColor').value = screen?.tickerColor || '#FFD700';
+  document.getElementById('tickerBgColor').value = screen?.tickerBgColor || '#000000';
   document.getElementById('tickerSpeed').value = screen?.tickerSpeed || 60;
   document.getElementById('tickerWeatherEnabled').checked = screen?.weatherEnabled !== false;
   
@@ -2006,8 +2021,15 @@ window.updateTickerPreview = function() {
 
 // Renk değişince önizleme güncelle
 document.addEventListener('change', function(e) {
-  if (e.target && (e.target.id === 'tickerColor' || e.target.id === 'tickerSpeed')) {
+  if (e.target && (e.target.id === 'tickerColor' || e.target.id === 'tickerSpeed' || e.target.id === 'tickerBgColor')) {
     updateTickerPreview();
+    if (e.target.id === 'tickerBgColor') {
+      var preview = document.getElementById('tickerPreview');
+      if (preview) {
+        var bg = e.target.value;
+        preview.style.background = 'linear-gradient(90deg, ' + bg + ', ' + bg + 'dd)';
+      }
+    }
   }
 });
 
@@ -2025,6 +2047,7 @@ window.saveTickerSettings = async function() {
     tickerEnabled: tickerEnabledTemp,
     tickerCity: document.getElementById('tickerCity').value.trim() || 'Berlin',
     tickerColor: document.getElementById('tickerColor').value,
+    tickerBgColor: document.getElementById('tickerBgColor').value,
     tickerSpeed: parseInt(document.getElementById('tickerSpeed').value),
     tickerMessages: msgsForSave,
     tickerImages: [], // Eski alanı temizle (artık her mesajla birlikte)
