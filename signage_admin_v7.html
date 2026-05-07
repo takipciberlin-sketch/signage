@@ -2221,6 +2221,8 @@ window.openTickerModal = function(shopId, screenId) {
   tickerEnabledTemp = screen?.tickerEnabled || false;
   tickerMessages = screen?.tickerMessages || [];
   if (typeof tickerMessages === 'string') tickerMessages = [tickerMessages];
+  if (!Array.isArray(tickerMessages)) tickerMessages = [];
+  tickerMessages = tickerMessages.map(m => String(m || ''));
   
   document.getElementById('tickerCity').value = screen?.tickerCity || 'Berlin';
   document.getElementById('tickerColor').value = screen?.tickerColor || '#FFD700';
