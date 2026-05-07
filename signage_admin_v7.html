@@ -3289,7 +3289,7 @@ var efDragStartY = 0;
 var efDragStartEffect = null;
 
 window.openEffectsEditor = function(shopId, screenId) {
-  var screen = (state.screens[shopId] || {})[screenId];
+  var screen = (screens[shopId] || {})[screenId];
   if (!screen) return;
   
   efActiveScreen = { shopId: shopId, screenId: screenId };
