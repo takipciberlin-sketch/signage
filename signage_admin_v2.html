@@ -402,6 +402,9 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <div class="nav-item" onclick="openAddShop()">
         <span class="icon">➕</span> Dükkân Ekle
       </div>
+      <div class="nav-item" onclick="downloadBackup()" style="color:var(--amber);">
+        <span class="icon">💾</span> Yedek Al
+      </div>
     </div>
   </div>
 
@@ -1689,6 +1692,99 @@ window.printInvoiceFrame = function() {
   var frame = document.getElementById('invoice-frame');
   if (frame) frame.contentWindow.print();
 }
+
+// ── YEDEKLEME SİSTEMİ ──
+window.downloadBackup = async function() {
+  showToast('💾 Yedek hazırlanıyor...', 'info');
+  
+  try {
+    // Tüm verileri Firebase'den çek
+    var shopsSnapshot = await get(ref(db, 'shops'));
+    var screensSnapshot = await get(ref(db, 'screens'));
+    var paymentsSnapshot = await get(ref(db, 'payments'));
+    
+    var backup = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      exportedAtReadable: new Date().toLocaleString('tr-TR'),
+      shops: shopsSnapshot.val() || {},
+      screens: screensSnapshot.val() || {},
+      payments: paymentsSnapshot.val() || {},
+      stats: {
+        totalShops: Object.keys(shopsSnapshot.val() || {}).length,
+        totalScreens: Object.values(screensSnapshot.val() || {}).reduce(function(sum, s) { return sum + Object.keys(s || {}).length; }, 0),
+        totalPayments: Object.values(paymentsSnapshot.val() || {}).reduce(function(sum, p) { return sum + Object.keys(p || {}).length; }, 0)
+      }
+    };
+    
+    // JSON dosyası oluştur ve indir
+    var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var now = new Date();
+    var fileName = 'signageos_yedek_' + now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + '.json';
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Son yedek tarihini kaydet
+    localStorage.setItem('signageos_last_backup', Date.now().toString());
+    
+    showToast('✅ Yedek indirildi! ' + backup.stats.totalShops + ' dükkân, ' + backup.stats.totalScreens + ' ekran', 'success');
+    
+  } catch(e) {
+    showToast('❌ Yedek alınamadı: ' + e.message, 'error');
+    console.error('Backup error:', e);
+  }
+}
+
+// Haftalık yedek hatırlatması
+function checkBackupReminder() {
+  var lastBackup = localStorage.getItem('signageos_last_backup');
+  if (!lastBackup) {
+    // Hiç yedek alınmamış, 1 hafta sonra hatırlat
+    setTimeout(function() {
+      if (!localStorage.getItem('signageos_last_backup')) {
+        showBackupReminder('Henüz hiç yedek almadınız!');
+      }
+    }, 5000);
+    return;
+  }
+  
+  var daysSince = (Date.now() - parseInt(lastBackup)) / (1000 * 60 * 60 * 24);
+  if (daysSince >= 7) {
+    setTimeout(function() {
+      showBackupReminder('Son yedeğinizin üzerinden ' + Math.floor(daysSince) + ' gün geçti!');
+    }, 3000);
+  }
+}
+
+function showBackupReminder(message) {
+  var existing = document.getElementById('backup-reminder');
+  if (existing) return;
+  
+  var banner = document.createElement('div');
+  banner.id = 'backup-reminder';
+  banner.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:linear-gradient(135deg,#ff9800,#ff6f00);color:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 8px 30px rgba(255,152,0,0.4);max-width:340px;font-family:Inter,sans-serif;animation:slideInRight 0.3s ease;';
+  banner.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+    '<div style="font-size:32px;">💾</div>' +
+    '<div style="flex:1;">' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">Yedek Hatırlatması</div>' +
+      '<div style="font-size:12px;opacity:0.95;margin-bottom:10px;">' + message + '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="downloadBackup();document.getElementById(\'backup-reminder\').remove()" style="padding:6px 14px;background:#fff;color:#ff6f00;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">💾 Yedek Al</button>' +
+        '<button onclick="document.getElementById(\'backup-reminder\').remove()" style="padding:6px 14px;background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Sonra</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(banner);
+}
+
+// Sayfa yüklenince yedek kontrol et (10 saniye sonra)
+setTimeout(checkBackupReminder, 10000);
 
 // ── ZAMAN BAZLI MENÜ (EKRAN BAZLI) ──
 let activeScheduleScreen = null; // {shopId, screenId}
