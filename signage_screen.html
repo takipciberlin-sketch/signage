@@ -47,7 +47,7 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 .wait-msg { font-size:14px; color:#718096; }
 .wait-status { font-size:12px; color:#4a5568; margin-top:8px; }
 
-#menuFrame { display:none; position:fixed; inset:0; width:100vw; height:100vh; border:none; }
+#menuFrame { display:none; position:fixed; top:0; left:0; width:100vw; height:calc(100vh - 120px); border:none; }
 
 #statusBar {
   position:fixed; bottom:12px; right:12px;
@@ -63,7 +63,7 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 /* ── ALT BANT (TICKER) ── */
 #tickerBar {
   position:fixed; bottom:0; left:0; right:0;
-  height:60px; display:none;
+  height:120px; display:none;
   background:linear-gradient(90deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
   border-top:2px solid #00e676;
   z-index:9998;
@@ -72,27 +72,27 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 }
 #tickerWeather {
   flex-shrink:0;
-  display:flex; align-items:center; gap:10px;
-  padding:0 20px; height:100%;
+  display:flex; align-items:center; gap:20px;
+  padding:0 40px; height:100%;
   background:rgba(0,230,118,0.1);
   border-right:2px solid rgba(0,230,118,0.3);
-  color:#fff; font-weight:600; font-size:18px;
+  color:#fff; font-weight:600; font-size:36px;
   white-space:nowrap;
 }
-#tickerWeather .icon { font-size:28px; }
-#tickerWeather .temp { font-size:22px; font-weight:800; color:#00e676; }
-#tickerWeather .city { font-size:13px; color:#b0bec5; font-weight:500; }
+#tickerWeather .icon { font-size:56px; }
+#tickerWeather .temp { font-size:44px; font-weight:800; color:#00e676; }
+#tickerWeather .city { font-size:26px; color:#b0bec5; font-weight:500; }
 #tickerScroll {
   flex:1; overflow:hidden; position:relative; height:100%;
   display:flex; align-items:center;
 }
 #tickerScroll .scroll-content {
   display:inline-block; white-space:nowrap;
-  font-size:24px; font-weight:700;
+  font-size:48px; font-weight:700;
   animation:tickerScroll 60s linear infinite;
   padding-left:100%;
 }
-.scroll-content span { padding:0 40px; }
+.scroll-content span { padding:0 80px; }
 @keyframes tickerScroll {
   0%   { transform:translateX(0); }
   100% { transform:translateX(-100%); }
@@ -128,8 +128,8 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 </div>
 
 <iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
-<img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;z-index:1;">
-<video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;z-index:1;"></video>
+<img id="menuImage" src="" alt="" style="display:none;position:fixed;top:0;left:0;width:100vw;height:calc(100vh - 120px);object-fit:contain;background:#000;z-index:1;">
+<video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;top:0;left:0;width:100vw;height:calc(100vh - 120px);object-fit:cover;background:#000;z-index:1;"></video>
 
 <div id="statusBar">
   <div id="statusDot"></div>
@@ -410,13 +410,24 @@ var weatherCity = '';
 
 function updateTicker(data) {
   var bar = document.getElementById('tickerBar');
+  var frame = document.getElementById('menuFrame');
+  var img = document.getElementById('menuImage');
+  var vid = document.getElementById('menuVideo');
   
   if (!data.tickerEnabled) {
     bar.style.display = 'none';
+    // Ticker kapalı → menü tüm ekranı kaplasın
+    frame.style.height = '100vh';
+    img.style.height = '100vh';
+    vid.style.height = '100vh';
     return;
   }
   
   bar.style.display = 'flex';
+  // Ticker açık → 120px alan bırak
+  frame.style.height = 'calc(100vh - 120px)';
+  img.style.height = 'calc(100vh - 120px)';
+  vid.style.height = 'calc(100vh - 120px)';
   
   // Hız ayarı
   var speed = data.tickerSpeed || 60;
