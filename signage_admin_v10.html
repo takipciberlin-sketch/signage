@@ -2521,7 +2521,9 @@ window.openAddShop = function() {
   document.getElementById('newShopTaxId').value = '';
   document.getElementById('newShopIban').value = '';
   document.getElementById('newShopScreens').value = '7';
+  document.getElementById('newShopPlan').value = 'monthly';
   document.getElementById('newShopFee').value = '';
+  updatePlanEndDate(); // Tarihi hesapla
 
   document.getElementById('addShopModal').classList.add('open');
 }
@@ -2546,7 +2548,15 @@ window.openEditShop = function(shopId) {
   document.getElementById('newShopIban').value     = shop.iban || '';
   const currentScreens = Object.keys(screens[shopId] || {}).length;
   document.getElementById('newShopScreens').value = currentScreens || 1;
-  document.getElementById('newShopFee').value = shop.fee || '';
+  
+  // Plan bilgilerini doldur
+  document.getElementById('newShopPlan').value = shop.subscriptionType || 'monthly';
+  document.getElementById('newShopFee').value = shop.planFee || shop.fee || '';
+  if (shop.planEndDate) {
+    document.getElementById('newShopPlanEnd').value = new Date(shop.planEndDate).toLocaleDateString('de-DE');
+  } else {
+    updatePlanEndDate();
+  }
 
   document.getElementById('addShopModal').classList.add('open');
 }
