@@ -1578,40 +1578,13 @@ function renderMenusView() {
   <div class="page-header">
     <div>
       <div class="page-title">Menü Yönetimi</div>
-      <div class="page-sub">Menü URL'lerini yönet ve ekranlara gönder</div>
+      <div class="page-sub">Her ekrana menü göndermek için Ekranlar bölümünü kullanın</div>
     </div>
   </div>
-  <div class="menu-manager">
-    <div class="section-title">Hızlı Menü Gönder</div>
-    <div class="menu-grid">
-      <div class="menu-field">
-        <div class="field-label">Dükkân Seç</div>
-        <select class="field-input" id="quickShop">
-          ${Object.entries(shops).map(([id,s]) => `<option value="${id}">${s.name}</option>`).join('')}
-        </select>
-      </div>
-      <div class="menu-field">
-        <div class="field-label">Menü Adı</div>
-        <input class="field-input" id="quickMenuName" placeholder="Örn: Pasta & Salat Menüsü">
-      </div>
-    </div>
-    <div class="menu-field" style="margin-top:12px;">
-      <div class="field-label">Menü Dosyası (bilgisayardan seç)</div>
-      <label style="display:block;width:100%;padding:14px;background:var(--s2);border:2px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='#00e676'" onmouseout="this.style.borderColor='var(--border)'">
-        <input type="file" id="quickMenuFileInput" accept="image/*,.html" style="display:none;" onchange="handleQuickMenuFile(this)">
-        <div style="font-size:32px;margin-bottom:8px;">📤</div>
-        <div style="font-size:13px;color:var(--text);font-weight:600;">Dosya Seç</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:4px;">PNG, JPG, HTML</div>
-      </label>
-      <div id="quickMenuFileInfo" style="display:none;margin-top:10px;padding:10px;background:var(--s3);border-radius:6px;font-size:11px;">
-        <div style="color:var(--text);font-weight:600;" id="quickMenuFileName"></div>
-        <div style="color:var(--text2);margin-top:4px;" id="quickMenuFileSize"></div>
-      </div>
-      <input type="hidden" id="quickMenuUrl">
-    </div>
-    <div style="margin-top:16px;display:flex;gap:10px;">
-      <button class="btn btn-primary" onclick="quickPushAll()">📤 Tüm Ekranlara Gönder</button>
-    </div>
+  <div class="menu-manager" style="padding:40px 0;text-align:center;color:var(--text2);">
+    <div style="font-size:48px;margin-bottom:16px;">📺</div>
+    <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;">Menü yüklemek için</div>
+    <div style="font-size:13px;">Sol menüden <strong>📺 Ekranlar</strong> seçin → İstediğiniz ekranı bulun → <strong>Menü</strong> butonuna tıklayın</div>
   </div>`;
 }
 
@@ -2586,38 +2559,6 @@ window.pushToAll = function(shopId) {
   };
 }
 
-window.handleQuickMenuFile = async function(input) {
-  var file = input.files[0];
-  if (!file) return;
-  
-  // Dosya bilgisi göster
-  document.getElementById('quickMenuFileName').textContent = file.name;
-  document.getElementById('quickMenuFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
-  document.getElementById('quickMenuFileInfo').style.display = 'block';
-  
-  showToast('⏳ Menü yükleniyor: ' + file.name, 'success');
-  
-  var formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET);
-  formData.append('resource_type', 'auto');
-  formData.append('folder', 'signage/menus');
-  
-  try {
-    var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/auto/upload', {
-      method: 'POST',
-      body: formData
-    });
-    var data = await res.json();
-    var url = data.secure_url;
-    
-    document.getElementById('quickMenuUrl').value = url;
-    showToast('✓ Menü yüklendi!', 'success');
-  } catch (err) {
-    showToast('❌ Yükleme hatası: ' + err.message, 'error');
-  }
-};
-
 window.handleTickerImageFile = async function(input, index) {
   var file = input.files[0];
   if (!file) return;
@@ -2646,17 +2587,6 @@ window.handleTickerImageFile = async function(input, index) {
   }
 };
 
-window.quickPushAll = async function() {
-  const shopId  = document.getElementById('quickShop').value;
-  const url     = document.getElementById('quickMenuUrl').value.trim();
-  const name    = document.getElementById('quickMenuName').value.trim();
-  if (!url) { showToast('URL boş olamaz', 'error'); return; }
-  const shopScreens = screens[shopId] || {};
-  for (const sid of Object.keys(shopScreens)) {
-    await update(ref(db, `screens/${shopId}/${sid}`), { menuUrl: url, menuName: name || 'Menü', updatedAt: Date.now() });
-  }
-  showToast('✓ Tüm ekranlara gönderildi', 'success');
-}
 
 // ── ADD SCREEN ──
 window.addScreen = async function(shopId) {
