@@ -1131,6 +1131,7 @@ setInterval(() => {
 
 // ── Init: Arkaşın dükkânını oluştur (ilk açılışta) ──
 async function initDemo() {
+  if (localStorage.getItem("signage_demo_cleared") === "true") return;
   const snap = await get(ref(db, 'shops'));
   if (!snap.exists()) {
     const shopId = 'shop_arkas';
@@ -2112,6 +2113,9 @@ function renderSettingsView() {
         <button onclick="firebaseDeleteAll()" style="background:rgba(255,82,82,0.15);color:var(--red);border:2px solid rgba(255,82,82,0.5);border-radius:7px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;letter-spacing:0.3px;">💥 TÜMÜNÜ SİL</button>
       </div>
     </div>
+  <div style="margin-top:12px;text-align:right;">
+    <button onclick="restoreDemo()" style="background:rgba(100,100,100,0.1);color:var(--text2);border:1px solid var(--border);border-radius:7px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">↩ Demo Veriyi Geri Yükle</button>
+  </div>
   </div>
 
   `;
@@ -2154,6 +2158,7 @@ window.firebaseDeleteNode = async function(nodePath, label) {
     showToast('⏳ Siliniyor...', 'success');
     const nodeRef = ref(db, nodePath);
     await remove(nodeRef);
+    localStorage.setItem("signage_demo_cleared", "true");
     showToast(`✅ "${label}" Firebase'den silindi`, 'success');
 
     // Eğer shops silindiyse local state'i de temizle
@@ -2166,6 +2171,14 @@ window.firebaseDeleteNode = async function(nodePath, label) {
     showToast('❌ Hata: ' + e.message, 'error');
     console.error(e);
   }
+};
+
+window.restoreDemo = async function() {
+  if (!confirm("Demo veri yeniden yüklensin mi?")) return;
+  localStorage.removeItem("signage_demo_cleared");
+  await initDemo();
+  showToast("✅ Demo veri geri yüklendi", "success");
+  renderSettingsView();
 };
 
 window.firebaseDeleteAll = async function() {
@@ -2187,6 +2200,7 @@ window.firebaseDeleteAll = async function() {
       await remove(ref(db, node));
     }
     shops = {};
+    localStorage.setItem("signage_demo_cleared", "true");
     renderSidebar();
     showToast('✅ Firebase tamamen sıfırlandı', 'success');
     renderSettingsView();
