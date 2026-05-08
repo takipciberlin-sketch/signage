@@ -420,6 +420,9 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <div class="nav-item" onclick="showView('payments')">
         <span class="icon">💰</span> Ödemeler
       </div>
+      <div class="nav-item" onclick="showView('settings')">
+        <span class="icon">⚙️</span> Ayarlar
+      </div>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -1230,6 +1233,7 @@ function renderCurrentView() {
   if (currentView === 'dashboard') renderDashboard();
   else if (currentView === 'screens') renderScreensView();
   else if (currentView === 'payments') renderPaymentsView();
+  else if (currentView === 'settings') renderSettingsView();
   else if (currentView === 'templates') renderTemplatesView();
   else if (currentView === 'customers') renderCustomersView();
   else if (currentView === 'shop' && activeShopId) renderShopDetail(activeShopId);
@@ -1341,6 +1345,7 @@ function renderShopDetail(shopId) {
   const shopScreens = screens[shopId] || {};
   const screenList = Object.entries(shopScreens);
   const online = screenList.filter(([,s]) => isOnline(s)).length;
+  const sandboxMode = localStorage.getItem('signage_sandbox_mode') === 'true';
 
   // WhatsApp link (numarayı temizle)
   const wa = (shop.ownerWhatsapp || '').replace(/[^0-9]/g, '');
@@ -1458,8 +1463,8 @@ function renderShopDetail(shopId) {
       </div>
     </div>
     <div style="display:flex;gap:8px;">
-      <button onclick="markPaid('${shopId}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 Nakit Ödendi</button>
-      <button onclick="markPaid('${shopId}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 Banka Ödendi</button>
+      <button onclick="markPaid('${shopId}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 ${sandboxMode ? 'Test Nakit' : 'Nakit Ödendi'}</button>
+      <button onclick="markPaid('${shopId}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 ${sandboxMode ? 'Test Banka' : 'Banka Ödendi'}</button>
     </div>
   </div>
   ` : ''}
@@ -1723,6 +1728,7 @@ function renderCustomersView() {
 function renderPaymentsView() {
   const shopList = Object.entries(shops);
   const today = new Date();
+  const sandboxMode = localStorage.getItem('signage_sandbox_mode') === 'true';
 
   // Hesaplamalar
   let totalExpected = 0, totalPaidThisMonth = 0, totalOverdue = 0, overdueCount = 0;
@@ -1836,8 +1842,8 @@ function renderPaymentsView() {
           </div>
 
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-            <button onclick="markPaid('${id}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 Nakit Ödendi</button>
-            <button onclick="markPaid('${id}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 Banka Ödendi</button>
+            <button onclick="markPaid('${id}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 ${sandboxMode ? 'Test Nakit' : 'Nakit Ödendi'}</button>
+            <button onclick="markPaid('${id}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 ${sandboxMode ? 'Test Banka' : 'Banka Ödendi'}</button>
             <button onclick="generateInvoice('${id}')" style="background:rgba(255,171,64,0.1);color:var(--amber);border:1px solid rgba(255,171,64,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📄 Rechnung</button>
             ${waLink ? `<a href="${waLink}" target="_blank" style="text-decoration:none;"><button style="background:rgba(0,230,118,0.05);color:var(--green);border:1px solid rgba(0,230,118,0.2);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💬 Hatırlat</button></a>` : ''}
           </div>
@@ -1856,18 +1862,27 @@ window.markPaid = async function(shopId, method) {
 
   const planFee = shop.planFee || shop.fee || 0;
   const planType = shop.subscriptionType || 'monthly';
+  const sandboxMode = localStorage.getItem('signage_sandbox_mode') === 'true';
   const methodText = method === 'cash' ? 'Nakit' : 'Banka';
+  const modeLabel = sandboxMode ? ' (TEST)' : '';
   
-  if (!confirm(`${shop.name} için ${planFee}€ ${methodText} ödemesi alındı olarak işaretlensin mi?`)) return;
+  if (!confirm(`${shop.name} için ${planFee}€ ${methodText}${modeLabel} ödemesi alındı olarak işaretlensin mi?`)) return;
 
   showToast('⏳ Fatura oluşturuluyor...', 'success');
 
   // Fatura oluştur
   const now = new Date();
-  const invoiceNumber = 'SOS-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + shopId.slice(-4);
+  const invoiceNumber = (sandboxMode ? 'TEST-' : 'SOS-') + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + shopId.slice(-4);
   const invoiceHTML = createInvoiceHTML(shop, shopId, planFee, planType, invoiceNumber, method);
 
-  // Ödeme geçmişine ekle (fatura HTML'i ile birlikte)
+  if (sandboxMode) {
+    // SANDBOX: Sadece faturayı indir, Firebase'e kaydetme
+    showToast(`🧪 TEST: ${shop.name} · ${planFee}€ ${methodText} (Firebase'e kaydedilmedi)`, 'success');
+    downloadInvoiceFromHTML(invoiceHTML, invoiceNumber);
+    return;
+  }
+
+  // PRODUCTION: Firebase'e kaydet
   const paymentId = 'pay_' + Date.now();
   await set(ref(db, `payments/${shopId}/${paymentId}`), {
     amount: planFee,
@@ -1896,6 +1911,129 @@ window.markPaid = async function(shopId, method) {
   // Faturayı otomatik indir
   downloadInvoiceFromHTML(invoiceHTML, invoiceNumber);
 }
+
+// ── SETTINGS VIEW ──
+function renderSettingsView() {
+  // LocalStorage'dan ayarları yükle
+  var sandboxMode = localStorage.getItem('signage_sandbox_mode') === 'true';
+  
+  document.getElementById('mainContent').innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">⚙️ Ayarlar</div>
+      <div class="page-sub">Sistem yapılandırması · Fatura bilgileri · Test modu</div>
+    </div>
+  </div>
+
+  ${sandboxMode ? `
+  <div style="background:rgba(255,171,64,0.1);border:1px solid rgba(255,171,64,0.3);border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+    <div style="font-size:28px;">⚠️</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#ffc107;margin-bottom:4px;">SANDBOX MODU AKTİF</div>
+      <div style="font-size:12px;color:var(--text2);">Test ödemeleri Firebase'e kaydedilmez · Geliştirme amaçlı</div>
+    </div>
+  </div>
+  ` : ''}
+
+  <div class="section-title">🏦 Fatura Bilgileri</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;">
+    <div class="menu-grid">
+      <div class="menu-field">
+        <div class="field-label">Firma Adı</div>
+        <input class="field-input" id="settingsFirma" value="${INVOICE_CONFIG.firma || ''}" placeholder="Screen Magic Berlin">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">İnhaber / Sahip</div>
+        <input class="field-input" id="settingsInhaber" value="${INVOICE_CONFIG.inhaber || ''}" placeholder="Ocak">
+      </div>
+    </div>
+    <div class="menu-grid">
+      <div class="menu-field">
+        <div class="field-label">Adres</div>
+        <input class="field-input" id="settingsAdresse" value="${INVOICE_CONFIG.adresse || ''}" placeholder="Berlin, Deutschland">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">E-Mail</div>
+        <input class="field-input" id="settingsEmail" value="${INVOICE_CONFIG.email || ''}" placeholder="info@signageos.de">
+      </div>
+    </div>
+    <div class="menu-grid">
+      <div class="menu-field">
+        <div class="field-label">Telefon (opsiyonel)</div>
+        <input class="field-input" id="settingsTelefon" value="${INVOICE_CONFIG.telefon || ''}" placeholder="+49 30 12345678">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">Steuernummer (opsiyonel)</div>
+        <input class="field-input" id="settingsSteuernr" value="${INVOICE_CONFIG.steuernr || ''}" placeholder="12/345/67890">
+      </div>
+    </div>
+    <div class="menu-grid">
+      <div class="menu-field">
+        <div class="field-label">IBAN</div>
+        <input class="field-input" id="settingsIban" value="${INVOICE_CONFIG.iban || ''}" placeholder="DE89 3704 0044 0532 0130 00">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">BIC</div>
+        <input class="field-input" id="settingsBic" value="${INVOICE_CONFIG.bic || ''}" placeholder="DEUTDEDB">
+      </div>
+    </div>
+    <div class="menu-field">
+      <div class="field-label">USt-IdNr (opsiyonel)</div>
+      <input class="field-input" id="settingsUstId" value="${INVOICE_CONFIG.ustId || ''}" placeholder="DE123456789">
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="saveInvoiceSettings()">💾 Fatura Bilgilerini Kaydet</button>
+    </div>
+  </div>
+
+  <div class="section-title">🧪 Test Modu</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;">
+    <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:16px;">
+      <label style="position:relative;display:inline-block;width:52px;height:28px;cursor:pointer;">
+        <input type="checkbox" id="sandboxToggle" ${sandboxMode ? 'checked' : ''} onchange="toggleSandboxMode()" style="opacity:0;width:0;height:0;">
+        <span style="position:absolute;inset:0;background:${sandboxMode ? '#ffc107' : 'var(--s3)'};border-radius:28px;transition:all .3s;"></span>
+        <span style="position:absolute;left:4px;top:4px;width:20px;height:20px;background:#fff;border-radius:50%;transition:all .3s;transform:translateX(${sandboxMode ? '24px' : '0'});"></span>
+      </label>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Sandbox Banka Modu</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;">
+          Test ödemeleri gerçek Firebase'e kaydedilmez. Geliştirme ve demo için kullanın.
+          <br><strong>Aktif olduğunda:</strong> Ödeme butonları "Test" etiketi taşır, işlemler sadece lokal saklanır.
+        </div>
+      </div>
+    </div>
+    ${sandboxMode ? `
+    <div style="background:rgba(255,171,64,0.05);border:1px solid rgba(255,171,64,0.15);border-radius:8px;padding:12px;margin-top:12px;">
+      <div style="font-size:11px;color:var(--text2);line-height:1.6;">
+        💡 <strong>İpucu:</strong> Production'a geçmek için bu modu kapatın. Gerçek ödemeler Firebase'e kaydedilmeye başlayacak.
+      </div>
+    </div>
+    ` : ''}
+  </div>
+  `;
+}
+
+window.saveInvoiceSettings = function() {
+  INVOICE_CONFIG.firma = document.getElementById('settingsFirma').value.trim();
+  INVOICE_CONFIG.inhaber = document.getElementById('settingsInhaber').value.trim();
+  INVOICE_CONFIG.adresse = document.getElementById('settingsAdresse').value.trim();
+  INVOICE_CONFIG.email = document.getElementById('settingsEmail').value.trim();
+  INVOICE_CONFIG.telefon = document.getElementById('settingsTelefon').value.trim();
+  INVOICE_CONFIG.steuernr = document.getElementById('settingsSteuernr').value.trim();
+  INVOICE_CONFIG.iban = document.getElementById('settingsIban').value.trim();
+  INVOICE_CONFIG.bic = document.getElementById('settingsBic').value.trim();
+  INVOICE_CONFIG.ustId = document.getElementById('settingsUstId').value.trim();
+  
+  localStorage.setItem('signageos_invoice_cfg', JSON.stringify(INVOICE_CONFIG));
+  showToast('✓ Fatura bilgileri kaydedildi', 'success');
+};
+
+window.toggleSandboxMode = function() {
+  var enabled = document.getElementById('sandboxToggle').checked;
+  localStorage.setItem('signage_sandbox_mode', enabled ? 'true' : 'false');
+  showToast(enabled ? '🧪 Sandbox modu aktif' : '✓ Production modu aktif', 'success');
+  renderSettingsView(); // Refresh
+};
 
 // ── RECHNUNG / FATURA SİSTEMİ ──
 var INVOICE_CONFIG = {
