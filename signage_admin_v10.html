@@ -2301,7 +2301,11 @@ function renderTickerMessages() {
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;padding-left:26px;">' +
         '<span style="font-size:10px;color:var(--text2);">🖼️ PNG:</span>' +
-        '<input class="field-input" placeholder="https://... (opsiyonel)" value="' + safeImg + '" style="flex:1;font-size:10px;" oninput="window.tickerMessages[' + i + '].imageUrl=this.value;window.renderTickerMessages();window.updateTickerPreview()">' +
+        '<label style="flex:1;display:block;padding:6px 10px;background:var(--s3);border:1px dashed var(--dim);border-radius:4px;text-align:center;cursor:pointer;font-size:10px;color:var(--text2);transition:all .2s;" onmouseover="this.style.borderColor=\'#ffc107\';this.style.color=\'#ffc107\'" onmouseout="this.style.borderColor=\'var(--dim)\';this.style.color=\'var(--text2)\'">' +
+          '<input type="file" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleTickerImageFile(this, ' + i + ')">' +
+          (hasImg ? '✓ Yüklendi' : '📤 Dosya Seç') +
+        '</label>' +
+        (hasImg ? '<button onclick="window.tickerMessages[' + i + '].imageUrl=\'\';window.renderTickerMessages();window.updateTickerPreview()" style="padding:4px 8px;background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.2);border-radius:4px;font-size:10px;cursor:pointer;">✕</button>' : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -2348,14 +2352,17 @@ window.saveTickerSettings = async function() {
   if (!activeTickerScreen) return;
   var { shopId, screenId } = activeTickerScreen;
   
-  var msgs = tickerMessages.filter(function(m) { return m.trim(); });
+  // Obje formatında filtrele - boş text olanları çıkar
+  var msgs = tickerMessages.filter(function(m) { 
+    return m && typeof m === 'object' && (m.text || '').trim(); 
+  });
   
   var data = {
     tickerEnabled: tickerEnabledTemp,
     tickerCity: document.getElementById('tickerCity').value.trim() || 'Berlin',
     tickerColor: document.getElementById('tickerColor').value,
     tickerSpeed: parseInt(document.getElementById('tickerSpeed').value),
-    tickerMessages: msgs.length > 0 ? msgs : ['Hoş Geldiniz'],
+    tickerMessages: msgs.length > 0 ? msgs : [{ text: 'Hoş Geldiniz', imageUrl: '' }],
     weatherEnabled: document.getElementById('tickerWeatherEnabled').checked
   };
   
@@ -2596,6 +2603,23 @@ window.handleQuickMenuFile = function(input) {
   var urlPrompt = prompt('Dosyayı yükledikten sonra URL\'i buraya yapıştır:');
   if (urlPrompt) {
     document.getElementById('quickMenuUrl').value = urlPrompt;
+  }
+};
+
+window.handleTickerImageFile = function(input, index) {
+  var file = input.files[0];
+  if (!file) return;
+  
+  // Dosya bilgisi
+  var fileName = file.name;
+  var fileSize = (file.size / 1024).toFixed(1) + ' KB';
+  
+  // Cloudinary'ye yükle (geçici: prompt ile URL al)
+  var urlPrompt = prompt('PNG dosyasını Cloudinary\'ye yükle, sonra URL\'i buraya yapıştır:\n\nDosya: ' + fileName + ' (' + fileSize + ')');
+  if (urlPrompt && urlPrompt.trim()) {
+    tickerMessages[index].imageUrl = urlPrompt.trim();
+    renderTickerMessages();
+    updateTickerPreview();
   }
 };
 
