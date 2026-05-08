@@ -2065,7 +2065,6 @@ window.toggleSandboxMode = function() {
 
 // ── PAYMENT HISTORY ──
 window.openPaymentHistory = async function(shopId) {
-  alert('Geçmiş butonu çalışıyor! Shop ID: ' + shopId);
   console.log('🔍 Opening payment history for:', shopId);
   
   const shop = shops[shopId];
@@ -4202,7 +4201,7 @@ renderDashboard();
 </script>
 
 <!-- Payment History Modal -->
-<div id="paymentHistoryModal" class="overlay">
+<div id="paymentHistoryModal" class="modal-overlay">
   <div class="modal" style="max-width:900px;">
     <div class="modal-header">
       <div>
