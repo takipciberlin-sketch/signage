@@ -2586,7 +2586,7 @@ window.pushToAll = function(shopId) {
   };
 }
 
-window.handleQuickMenuFile = function(input) {
+window.handleQuickMenuFile = async function(input) {
   var file = input.files[0];
   if (!file) return;
   
@@ -2595,31 +2595,54 @@ window.handleQuickMenuFile = function(input) {
   document.getElementById('quickMenuFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
   document.getElementById('quickMenuFileInfo').style.display = 'block';
   
-  // Cloudinary'ye yükle (veya başka hosting)
-  alert('Dosyayı Cloudinary veya başka bir hosting\'e yükle, sonra URL otomatik gelecek.\n\n' +
-        'Şimdilik: Dosyayı manuel yükle (örn: Cloudinary), URL\'i kopyala ve buraya yapıştır.');
+  showToast('⏳ Menü yükleniyor: ' + file.name, 'success');
   
-  // Geçici: Kullanıcıdan URL istemek için hidden input'u göster
-  var urlPrompt = prompt('Dosyayı yükledikten sonra URL\'i buraya yapıştır:');
-  if (urlPrompt) {
-    document.getElementById('quickMenuUrl').value = urlPrompt;
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('resource_type', 'auto');
+  formData.append('folder', 'signage/menus');
+  
+  try {
+    var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/auto/upload', {
+      method: 'POST',
+      body: formData
+    });
+    var data = await res.json();
+    var url = data.secure_url;
+    
+    document.getElementById('quickMenuUrl').value = url;
+    showToast('✓ Menü yüklendi!', 'success');
+  } catch (err) {
+    showToast('❌ Yükleme hatası: ' + err.message, 'error');
   }
 };
 
-window.handleTickerImageFile = function(input, index) {
+window.handleTickerImageFile = async function(input, index) {
   var file = input.files[0];
   if (!file) return;
   
-  // Dosya bilgisi
-  var fileName = file.name;
-  var fileSize = (file.size / 1024).toFixed(1) + ' KB';
+  showToast('⏳ PNG yükleniyor: ' + file.name, 'success');
   
-  // Cloudinary'ye yükle (geçici: prompt ile URL al)
-  var urlPrompt = prompt('PNG dosyasını Cloudinary\'ye yükle, sonra URL\'i buraya yapıştır:\n\nDosya: ' + fileName + ' (' + fileSize + ')');
-  if (urlPrompt && urlPrompt.trim()) {
-    tickerMessages[index].imageUrl = urlPrompt.trim();
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'signage/ticker');
+  
+  try {
+    var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/image/upload', {
+      method: 'POST',
+      body: formData
+    });
+    var data = await res.json();
+    var url = data.secure_url;
+    
+    tickerMessages[index].imageUrl = url;
     renderTickerMessages();
     updateTickerPreview();
+    showToast('✓ PNG yüklendi!', 'success');
+  } catch (err) {
+    showToast('❌ Yükleme hatası: ' + err.message, 'error');
   }
 };
 
