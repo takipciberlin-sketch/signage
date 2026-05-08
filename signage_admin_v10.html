@@ -414,9 +414,6 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
       <div class="nav-item" onclick="showView('templates')">
         <span class="icon">📋</span> Şablonlar
       </div>
-      <div class="nav-item" onclick="showView('menus')">
-        <span class="icon">🍽️</span> Menü Yönetimi
-      </div>
       <div class="nav-item" onclick="showView('customers')">
         <span class="icon">👥</span> Müşteriler
       </div>
@@ -549,8 +546,24 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
         <input class="field-input" id="newShopScreens" type="number" min="1" max="50" value="7">
       </div>
       <div class="menu-field">
-        <div class="field-label">Aylık Ücret (€)</div>
-        <input class="field-input" id="newShopFee" type="number" placeholder="Manuel gir">
+        <div class="field-label">Abonelik Planı</div>
+        <select class="field-input" id="newShopPlan" onchange="updatePlanEndDate()">
+          <option value="monthly">Aylık</option>
+          <option value="3month">3 Aylık</option>
+          <option value="6month">6 Aylık</option>
+          <option value="9month">9 Aylık</option>
+          <option value="12month">12 Aylık (Yıllık)</option>
+        </select>
+      </div>
+    </div>
+    <div class="menu-grid">
+      <div class="menu-field">
+        <div class="field-label">Plan Ücreti (€)</div>
+        <input class="field-input" id="newShopFee" type="number" placeholder="Manuel gir (örn: 280€)">
+      </div>
+      <div class="menu-field">
+        <div class="field-label">Plan Bitiş Tarihi</div>
+        <input class="field-input" id="newShopPlanEnd" type="text" readonly style="background:var(--s3);color:var(--text2);" placeholder="Otomatik hesaplanır">
       </div>
     </div>
 
@@ -1216,7 +1229,6 @@ window.showView = function(v) {
 function renderCurrentView() {
   if (currentView === 'dashboard') renderDashboard();
   else if (currentView === 'screens') renderScreensView();
-  else if (currentView === 'menus') renderMenusView();
   else if (currentView === 'payments') renderPaymentsView();
   else if (currentView === 'templates') renderTemplatesView();
   else if (currentView === 'customers') renderCustomersView();
@@ -1572,22 +1584,6 @@ function renderScreenCards(screenArr) {
   }).join('');
 }
 
-// ── MENUS VIEW ──
-function renderMenusView() {
-  document.getElementById('mainContent').innerHTML = `
-  <div class="page-header">
-    <div>
-      <div class="page-title">Menü Yönetimi</div>
-      <div class="page-sub">Her ekrana menü göndermek için Ekranlar bölümünü kullanın</div>
-    </div>
-  </div>
-  <div class="menu-manager" style="padding:40px 0;text-align:center;color:var(--text2);">
-    <div style="font-size:48px;margin-bottom:16px;">📺</div>
-    <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;">Menü yüklemek için</div>
-    <div style="font-size:13px;">Sol menüden <strong>📺 Ekranlar</strong> seçin → İstediğiniz ekranı bulun → <strong>Menü</strong> butonuna tıklayın</div>
-  </div>`;
-}
-
 // ── PAYMENTS VIEW ──
 function getPaymentStatus(shop) {
   // Ödeme durumu hesapla
@@ -1858,25 +1854,47 @@ window.markPaid = async function(shopId, method) {
   const shop = shops[shopId];
   if (!shop) return;
 
+  const planFee = shop.planFee || shop.fee || 0;
+  const planType = shop.subscriptionType || 'monthly';
   const methodText = method === 'cash' ? 'Nakit' : 'Banka';
-  if (!confirm(`${shop.name} için ${shop.fee}€ ${methodText} ödemesi alındı olarak işaretlensin mi?`)) return;
+  
+  if (!confirm(`${shop.name} için ${planFee}€ ${methodText} ödemesi alındı olarak işaretlensin mi?`)) return;
 
-  // Ödeme geçmişine ekle
+  showToast('⏳ Fatura oluşturuluyor...', 'success');
+
+  // Fatura oluştur
+  const now = new Date();
+  const invoiceNumber = 'SOS-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + shopId.slice(-4);
+  const invoiceHTML = createInvoiceHTML(shop, shopId, planFee, planType, invoiceNumber, method);
+
+  // Ödeme geçmişine ekle (fatura HTML'i ile birlikte)
   const paymentId = 'pay_' + Date.now();
   await set(ref(db, `payments/${shopId}/${paymentId}`), {
-    amount: shop.fee || 0,
+    amount: planFee,
     method: method,
     paidAt: Date.now(),
+    invoiceNumber: invoiceNumber,
+    planType: planType,
+    invoiceHTML: invoiceHTML,
     note: ''
   });
 
-  // Dükkâna son ödeme tarihini güncelle
+  // Plan bitiş tarihini hesapla
+  const planMonths = planType === 'monthly' ? 1 : planType === '3month' ? 3 : planType === '6month' ? 6 : planType === '9month' ? 9 : 12;
+  const newPlanEnd = new Date(shop.planEndDate || Date.now());
+  newPlanEnd.setMonth(newPlanEnd.getMonth() + planMonths);
+
+  // Dükkânı güncelle
   await update(ref(db, `shops/${shopId}`), {
     lastPaidAt: Date.now(),
-    lastPaidMethod: method
+    lastPaidMethod: method,
+    planEndDate: newPlanEnd.getTime()
   });
 
-  showToast(`✓ ${shop.name} · ${shop.fee}€ ${methodText} ödendi`, 'success');
+  showToast(`✓ ${shop.name} · ${planFee}€ ${methodText} ödendi · Fatura kaydedildi`, 'success');
+  
+  // Faturayı otomatik indir
+  downloadInvoiceFromHTML(invoiceHTML, invoiceNumber);
 }
 
 // ── RECHNUNG / FATURA SİSTEMİ ──
@@ -1898,7 +1916,100 @@ try {
   if (savedCfg) INVOICE_CONFIG = Object.assign(INVOICE_CONFIG, JSON.parse(savedCfg));
 } catch(e) {}
 
-window.generateInvoice = function(shopId) {
+// Fatura HTML oluştur
+function createInvoiceHTML(shop, shopId, amount, planType, invoiceNumber, paymentMethod) {
+  var now = new Date();
+  var planLabel = planType === 'monthly' ? '1 Monat' : planType === '3month' ? '3 Monate' : planType === '6month' ? '6 Monate' : planType === '9month' ? '9 Monate' : '12 Monate';
+  var datum = now.toLocaleDateString('de-DE');
+  var faellig = new Date(now.getTime() + 14*24*60*60*1000).toLocaleDateString('de-DE');
+  var screenCount = Object.keys(screens[shopId] || {}).length;
+  
+  var netto = amount;
+  var mwst = Math.round(netto * 0.19 * 100) / 100;
+  var brutto = Math.round((netto + mwst) * 100) / 100;
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rechnung ' + invoiceNumber + '</title>'
+    + '<style>'
+    + 'body{font-family:Helvetica,Arial,sans-serif;font-size:11pt;color:#1a1a1a;margin:0;padding:40px 50px;}'
+    + '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;}'
+    + '.logo{font-size:22pt;font-weight:800;letter-spacing:-0.5px;}' 
+    + '.logo span{color:#00e676;}'
+    + '.from{font-size:9pt;color:#666;text-align:right;line-height:1.6;}'
+    + '.to{background:#f8f8f8;border-radius:8px;padding:20px;margin-bottom:30px;}'
+    + '.to-label{font-size:8pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}'
+    + '.to-name{font-size:14pt;font-weight:700;margin-bottom:4px;}'
+    + '.meta{display:flex;justify-content:space-between;margin-bottom:30px;}'
+    + '.meta-box{background:#f8f8f8;border-radius:8px;padding:14px 20px;flex:1;margin:0 6px;}'
+    + '.meta-label{font-size:8pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}'
+    + '.meta-val{font-size:12pt;font-weight:700;}'
+    + 'table{width:100%;border-collapse:collapse;margin-bottom:24px;}'
+    + 'th{background:#1a1a1a;color:#fff;padding:10px 14px;text-align:left;font-size:9pt;text-transform:uppercase;letter-spacing:0.5px;}'
+    + 'th:last-child,td:last-child{text-align:right;}'
+    + 'td{padding:12px 14px;border-bottom:1px solid #eee;font-size:10pt;}'
+    + '.total-row td{font-weight:700;font-size:11pt;border-top:2px solid #1a1a1a;border-bottom:none;}'
+    + '.brutto td{font-size:14pt;color:#00b862;}'
+    + '.bank{background:#f0faf5;border:1px solid #d0ead9;border-radius:8px;padding:20px;margin-top:20px;}'
+    + '.bank-title{font-size:9pt;font-weight:700;color:#00b862;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}'
+    + '.bank-row{display:flex;gap:40px;font-size:10pt;margin-bottom:4px;}'
+    + '.bank-label{color:#666;min-width:120px;}'
+    + '.footer{margin-top:40px;padding-top:16px;border-top:1px solid #ddd;font-size:8pt;color:#999;text-align:center;line-height:1.8;}'
+    + '@media print{body{margin:0;padding:30px 40px;}}'
+    + '</style></head><body>'
+    + '<div class="header">'
+    + '<div class="logo">Screen <span>Magic</span></div>'
+    + '<div class="from">'
+    + INVOICE_CONFIG.firma + '<br>'
+    + INVOICE_CONFIG.inhaber + '<br>'
+    + INVOICE_CONFIG.adresse + '<br>'
+    + (INVOICE_CONFIG.email ? INVOICE_CONFIG.email + '<br>' : '')
+    + (INVOICE_CONFIG.telefon ? INVOICE_CONFIG.telefon : '')
+    + '</div></div>'
+    + '<div class="to"><div class="to-label">Rechnungsempfänger</div>'
+    + '<div class="to-name">' + shop.name + '</div>'
+    + (shop.ownerName ? shop.ownerName + '<br>' : '')
+    + (shop.address || '') + '<br>'
+    + (shop.taxId ? 'Steuernummer: ' + shop.taxId : '')
+    + '</div>'
+    + '<div class="meta">'
+    + '<div class="meta-box"><div class="meta-label">Rechnungsnummer</div><div class="meta-val">' + invoiceNumber + '</div></div>'
+    + '<div class="meta-box"><div class="meta-label">Datum</div><div class="meta-val">' + datum + '</div></div>'
+    + '<div class="meta-box"><div class="meta-label">Fällig am</div><div class="meta-val">' + faellig + '</div></div>'
+    + '</div>'
+    + '<table><thead><tr><th>Position</th><th style="text-align:center;">Anzahl</th><th style="text-align:right;">Einzelpreis</th><th>Gesamt</th></tr></thead><tbody>'
+    + '<tr><td>Digital Signage Abonnement (' + planLabel + ')<br><span style="font-size:9pt;color:#999;">' + screenCount + ' Bildschirme</span></td><td style="text-align:center;">1</td><td style="text-align:right;">' + netto.toFixed(2) + '€</td><td>' + netto.toFixed(2) + '€</td></tr>'
+    + '<tr class="total-row"><td colspan="3">Netto</td><td>' + netto.toFixed(2) + '€</td></tr>'
+    + '<tr class="total-row"><td colspan="3">MwSt. (19%)</td><td>' + mwst.toFixed(2) + '€</td></tr>'
+    + '<tr class="total-row brutto"><td colspan="3">Gesamtbetrag</td><td>' + brutto.toFixed(2) + '€</td></tr>'
+    + '</tbody></table>'
+    + '<div class="bank"><div class="bank-title">Bankverbindung</div>'
+    + '<div class="bank-row"><span class="bank-label">Empfänger:</span><span>' + INVOICE_CONFIG.firma + '</span></div>'
+    + '<div class="bank-row"><span class="bank-label">IBAN:</span><span>' + INVOICE_CONFIG.iban + '</span></div>'
+    + '<div class="bank-row"><span class="bank-label">BIC:</span><span>' + INVOICE_CONFIG.bic + '</span></div>'
+    + '<div class="bank-row"><span class="bank-label">Verwendungszweck:</span><span>' + invoiceNumber + '</span></div>'
+    + '</div>'
+    + '<div class="footer">'
+    + INVOICE_CONFIG.firma + ' · ' + INVOICE_CONFIG.adresse + '<br>'
+    + (INVOICE_CONFIG.ustId ? 'USt-IdNr: ' + INVOICE_CONFIG.ustId + ' · ' : '')
+    + (INVOICE_CONFIG.steuernr ? 'Steuernummer: ' + INVOICE_CONFIG.steuernr : '')
+    + '</div></body></html>';
+  
+  return html;
+}
+
+// PDF indirme
+function downloadInvoiceFromHTML(html, invoiceNumber) {
+  var blob = new Blob([html], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = invoiceNumber + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+window.generateInvoice = function(shopId, reason) {
   var shop = shops[shopId];
   if (!shop) { showToast('Dükkân bulunamadı', 'error'); return; }
 
@@ -2451,20 +2562,43 @@ window.addShop = async function() {
   const iban      = document.getElementById('newShopIban').value.trim();
   const screens_  = parseInt(document.getElementById('newShopScreens').value) || 1;
   const fee       = parseInt(document.getElementById('newShopFee').value) || 0;
+  const planType  = document.getElementById('newShopPlan').value;
 
   if (!name) { showToast('Dükkân adı boş olamaz', 'error'); return; }
 
+  // Plan bitiş tarihini hesapla
+  const planStartDate = Date.now();
+  const planMonths = planType === 'monthly' ? 1 : planType === '3month' ? 3 : planType === '6month' ? 6 : planType === '9month' ? 9 : 12;
+  const planEndDate = new Date(planStartDate);
+  planEndDate.setMonth(planEndDate.getMonth() + planMonths);
+
   // DÜZENLEME MODU
   if (editingShopId) {
+    const oldShop = shops[editingShopId];
     const oldScreens = Object.keys(screens[editingShopId] || {}).length;
 
+    // Plan değişti mi?
+    const planChanged = oldShop && (oldShop.subscriptionType !== planType || oldShop.planFee !== fee);
+
     await update(ref(db, `shops/${editingShopId}`), {
-      name, address: addr, fee,
+      name, address: addr, 
+      planFee: fee,
+      subscriptionType: planType,
+      planStartDate: planStartDate,
+      planEndDate: planEndDate.getTime(),
       ownerName: owner, ownerEmail: email,
       ownerPhone: phone, ownerWhatsapp: whatsapp,
       taxId, iban,
       updatedAt: Date.now()
     });
+
+    // Plan değiştiyse yeni fatura oluştur
+    if (planChanged) {
+      showToast('⚠️ Plan değişti - yeni fatura oluşturuluyor...', 'success');
+      setTimeout(() => {
+        generateInvoice(editingShopId, 'plan_change');
+      }, 500);
+    }
 
     // Ekran sayısı değişmişse - manuel onay
     if (screens_ > oldScreens) {
@@ -2498,7 +2632,11 @@ window.addShop = async function() {
   // YENİ EKLEME MODU
   const shopId = 'shop_' + Date.now();
   await set(ref(db, `shops/${shopId}`), {
-    name, address: addr, fee,
+    name, address: addr, 
+    planFee: fee,
+    subscriptionType: planType,
+    planStartDate: planStartDate,
+    planEndDate: planEndDate.getTime(),
     ownerName: owner, ownerEmail: email,
     ownerPhone: phone, ownerWhatsapp: whatsapp,
     taxId, iban,
@@ -2516,6 +2654,15 @@ window.addShop = async function() {
   activeShopId = shopId;
   showToast(`✓ ${name} eklendi`, 'success');
 }
+
+// Plan bitiş tarihi güncelle
+window.updatePlanEndDate = function() {
+  const planType = document.getElementById('newShopPlan').value;
+  const months = planType === 'monthly' ? 1 : planType === '3month' ? 3 : planType === '6month' ? 6 : planType === '9month' ? 9 : 12;
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + months);
+  document.getElementById('newShopPlanEnd').value = endDate.toLocaleDateString('de-DE');
+};
 
 // ── PUSH MENU ──
 window.openPush = function(shopId, screenId) {
