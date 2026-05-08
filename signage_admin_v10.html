@@ -1356,7 +1356,7 @@ function renderShopDetail(shopId) {
   <div class="page-header">
     <div>
       <div class="page-title">${shop.name}</div>
-      <div class="page-sub">${shop.address || '—'} · ${screenList.length} ekran · Aylık ${shop.fee || 0}€</div>
+      <div class="page-sub">${shop.address || '—'} · ${screenList.length} ekran · ${shop.planFee || shop.fee || 0}€ / ${shop.subscriptionType === '3month' ? '3 Ay' : shop.subscriptionType === '6month' ? '6 Ay' : shop.subscriptionType === '9month' ? '9 Ay' : shop.subscriptionType === '12month' ? '12 Ay' : 'Aylık'}</div>
     </div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-ghost" onclick="openEditShop('${shopId}')">✏️ Düzenle</button>
@@ -1443,13 +1443,13 @@ function renderShopDetail(shopId) {
       <div class="stat-sub">ekran</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Aylık Ücret</div>
-      <div class="stat-val amber">${shop.fee || 0}€</div>
+      <div class="stat-label">Plan Ücreti</div>
+      <div class="stat-val amber">${shop.planFee || shop.fee || 0}€</div>
       <div class="stat-sub" style="color:${(()=>{const p=getPaymentStatus(shop);return p.color;})()};font-weight:600;">${(()=>{const p=getPaymentStatus(shop);return p.label;})()}</div>
     </div>
   </div>
 
-  ${shop.fee ? `
+  ${(shop.planFee || shop.fee) ? `
   <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
     <div>
       <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">💰 Bu Ay Ödeme</div>
@@ -1700,8 +1700,8 @@ function renderCustomersView() {
               <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Online</div>
             </div>
             <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:center;min-width:70px;">
-              <div style="font-size:22px;font-weight:700;color:var(--amber);">${shop.fee || 0}€</div>
-              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">/Ay</div>
+              <div style="font-size:22px;font-weight:700;color:var(--amber);">${shop.planFee || shop.fee || 0}€</div>
+              <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">/${shop.subscriptionType === '3month' ? '3AY' : shop.subscriptionType === '6month' ? '6AY' : shop.subscriptionType === '9month' ? '9AY' : shop.subscriptionType === '12month' ? '12AY' : 'AY'}</div>
             </div>
           </div>
 
@@ -1728,7 +1728,7 @@ function renderPaymentsView() {
   let totalExpected = 0, totalPaidThisMonth = 0, totalOverdue = 0, overdueCount = 0;
 
   const shopRows = shopList.map(([id, shop]) => {
-    const fee = shop.fee || 0;
+    const fee = shop.planFee || shop.fee || 0;
     const pay = getPaymentStatus(shop);
     totalExpected += fee;
 
@@ -2020,7 +2020,7 @@ window.generateInvoice = function(shopId, reason) {
   var faellig = new Date(now.getTime() + 14*24*60*60*1000).toLocaleDateString('de-DE');
   
   var screenCount = Object.keys(screens[shopId] || {}).length;
-  var netto = shop.fee || 0;
+  var netto = shop.planFee || shop.fee || 0;
   var mwst = Math.round(netto * 0.19 * 100) / 100;
   var brutto = Math.round((netto + mwst) * 100) / 100;
 
