@@ -280,8 +280,11 @@ firebase.initializeApp({
 });
 
 var fdb = firebase.database();
-var shopId   = localStorage.getItem('sgs_shopId');
-var screenId = localStorage.getItem('sgs_screenId');
+var _params = new URLSearchParams(window.location.search);
+var shopId = _params.get('shop') || localStorage.getItem('sgs_shopId');
+var screenId = _params.get('screen') || localStorage.getItem('sgs_screenId');
+if (_params.get('shop')) localStorage.setItem('sgs_shopId', _params.get('shop'));
+if (_params.get('screen')) localStorage.setItem('sgs_screenId', _params.get('screen'));
 var currentUrl = '';
 
 // Başlat butonu
