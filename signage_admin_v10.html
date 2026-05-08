@@ -2009,18 +2009,42 @@ function downloadInvoiceFromHTML(html, invoiceNumber) {
   URL.revokeObjectURL(url);
 }
 
-window.generateInvoice = function(shopId, reason) {
+window.generateInvoice = async function(shopId, reason) {
   var shop = shops[shopId];
   if (!shop) { showToast('Dükkân bulunamadı', 'error'); return; }
 
   var now = new Date();
-  var monat = now.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
   var rechnungNr = 'SOS-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + shopId.slice(-4);
+  var amount = shop.planFee || shop.fee || 0;
+  var planType = shop.subscriptionType || 'monthly';
+  
+  // Plan değişikliği - otomatik kaydet
+  if (reason === 'plan_change') {
+    var html = createInvoiceHTML(shop, shopId, amount, planType, rechnungNr, 'plan_change');
+    
+    const paymentId = 'invoice_' + Date.now();
+    await set(ref(db, `payments/${shopId}/${paymentId}`), {
+      amount: amount,
+      method: 'plan_change',
+      paidAt: Date.now(),
+      invoiceNumber: rechnungNr,
+      planType: planType,
+      invoiceHTML: html,
+      note: 'Plan değişikliği - otomatik fatura'
+    });
+    
+    showToast('✓ Plan değişikliği faturası: ' + rechnungNr, 'success');
+    downloadInvoiceFromHTML(html, rechnungNr);
+    return;
+  }
+
+  // Manuel fatura - overlay göster
+  var monat = now.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
   var datum = now.toLocaleDateString('de-DE');
   var faellig = new Date(now.getTime() + 14*24*60*60*1000).toLocaleDateString('de-DE');
   
   var screenCount = Object.keys(screens[shopId] || {}).length;
-  var netto = shop.planFee || shop.fee || 0;
+  var netto = amount;
   var mwst = Math.round(netto * 0.19 * 100) / 100;
   var brutto = Math.round((netto + mwst) * 100) / 100;
 
