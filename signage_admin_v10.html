@@ -1462,9 +1462,10 @@ function renderShopDetail(shopId) {
         Son ödeme: <strong>${shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') + (shop.lastPaidMethod === 'cash' ? ' · 💵 Nakit' : shop.lastPaidMethod === 'bank' ? ' · 🏦 Banka' : '') : '—'}</strong>
       </div>
     </div>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="markPaid('${shopId}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 ${sandboxMode ? 'Test Nakit' : 'Nakit Ödendi'}</button>
       <button onclick="markPaid('${shopId}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 ${sandboxMode ? 'Test Banka' : 'Banka Ödendi'}</button>
+      <button onclick="openPaymentHistory('${shopId}')" style="background:rgba(100,181,246,0.1);color:var(--blue);border:1px solid rgba(100,181,246,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📊 Geçmiş</button>
     </div>
   </div>
   ` : ''}
@@ -1591,13 +1592,39 @@ function renderScreenCards(screenArr) {
 
 // ── PAYMENTS VIEW ──
 function getPaymentStatus(shop) {
-  // Ödeme durumu hesapla
+  // Plan bitiş tarihi varsa onu kullan, yoksa eski hesaplama
+  const today = new Date();
+  
+  if (shop.planEndDate) {
+    const planEnd = new Date(shop.planEndDate);
+    const daysUntilDue = Math.floor((planEnd - today) / (24 * 60 * 60 * 1000));
+    
+    let status, color, label;
+    if (daysUntilDue < 0) {
+      status = 'overdue';
+      color = 'var(--red)';
+      label = `${Math.abs(daysUntilDue)} gün gecikti`;
+    } else if (daysUntilDue <= 3) {
+      status = 'soon';
+      color = 'var(--amber)';
+      label = daysUntilDue === 0 ? 'Bugün' : `${daysUntilDue} gün kaldı`;
+    } else if (daysUntilDue <= 7) {
+      status = 'pending';
+      color = 'var(--amber)';
+      label = `${daysUntilDue} gün kaldı`;
+    } else {
+      status = 'ok';
+      color = 'var(--green)';
+      label = `${daysUntilDue} gün kaldı`;
+    }
+    
+    return { status, color, label, nextDueDate: planEnd, daysUntilDue };
+  }
+  
+  // Eski sistem (planEndDate yoksa)
   const lastPaid = shop.lastPaidAt ? new Date(shop.lastPaidAt) : null;
   const startDate = shop.createdAt ? new Date(shop.createdAt) : new Date();
-  const today = new Date();
 
-  // Son ödeme yoksa: ilk fatura tarihi = oluşturulma + 30 gün
-  // Son ödeme varsa: bir sonraki tarih = son ödeme + 30 gün
   let nextDueDate;
   if (lastPaid) {
     nextDueDate = new Date(lastPaid.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -1845,6 +1872,7 @@ function renderPaymentsView() {
             <button onclick="markPaid('${id}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 ${sandboxMode ? 'Test Nakit' : 'Nakit Ödendi'}</button>
             <button onclick="markPaid('${id}','bank')" style="background:rgba(64,196,255,0.1);color:var(--blue);border:1px solid rgba(64,196,255,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">🏦 ${sandboxMode ? 'Test Banka' : 'Banka Ödendi'}</button>
             <button onclick="generateInvoice('${id}')" style="background:rgba(255,171,64,0.1);color:var(--amber);border:1px solid rgba(255,171,64,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📄 Rechnung</button>
+            <button onclick="openPaymentHistory('${id}')" style="background:rgba(100,181,246,0.1);color:var(--blue);border:1px solid rgba(100,181,246,0.25);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📊 Geçmiş</button>
             ${waLink ? `<a href="${waLink}" target="_blank" style="text-decoration:none;"><button style="background:rgba(0,230,118,0.05);color:var(--green);border:1px solid rgba(0,230,118,0.2);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💬 Hatırlat</button></a>` : ''}
           </div>
 
@@ -2033,6 +2061,123 @@ window.toggleSandboxMode = function() {
   localStorage.setItem('signage_sandbox_mode', enabled ? 'true' : 'false');
   showToast(enabled ? '🧪 Sandbox modu aktif' : '✓ Production modu aktif', 'success');
   renderSettingsView(); // Refresh
+};
+
+// ── PAYMENT HISTORY ──
+window.openPaymentHistory = async function(shopId) {
+  const shop = shops[shopId];
+  if (!shop) return;
+  
+  document.getElementById('historyModalSubtitle').textContent = `${shop.name} - Tüm ödemeler`;
+  
+  // Firebase'den ödemeleri çek
+  const paymentsRef = ref(db, `payments/${shopId}`);
+  const snapshot = await get(paymentsRef);
+  
+  let html = '';
+  
+  if (!snapshot.exists()) {
+    html = `
+      <div style="text-align:center;padding:40px;color:var(--text2);">
+        <div style="font-size:48px;margin-bottom:16px;">📭</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Henüz ödeme kaydı yok</div>
+        <div style="font-size:12px;">İlk ödeme yapıldığında burada görünecek</div>
+      </div>
+    `;
+  } else {
+    const payments = snapshot.val();
+    const paymentList = Object.entries(payments).sort((a, b) => b[1].paidAt - a[1].paidAt);
+    
+    html = `
+      <div style="margin-bottom:16px;">
+        <input type="text" id="paymentSearch" placeholder="🔍 Fatura numarası veya tarih ara..." 
+          style="width:100%;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;"
+          oninput="filterPaymentHistory()">
+      </div>
+      <div id="paymentList">
+    `;
+    
+    for (const [paymentId, payment] of paymentList) {
+      const date = new Date(payment.paidAt).toLocaleDateString('de-DE');
+      const time = new Date(payment.paidAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      const methodIcon = payment.method === 'cash' ? '💵' : payment.method === 'bank' ? '🏦' : '📄';
+      const methodText = payment.method === 'cash' ? 'Nakit' : payment.method === 'bank' ? 'Banka' : 'Plan Değişikliği';
+      const planText = payment.planType === 'monthly' ? 'Aylık' : 
+                       payment.planType === '3month' ? '3 Ay' :
+                       payment.planType === '6month' ? '6 Ay' :
+                       payment.planType === '9month' ? '9 Ay' :
+                       payment.planType === '12month' ? '12 Ay' : 'Aylık';
+      
+      html += `
+        <div class="payment-item" data-invoice="${payment.invoiceNumber}" data-date="${date}">
+          <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;">
+            <div style="font-size:32px;">${methodIcon}</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">
+                ${payment.invoiceNumber}
+                <span style="font-size:11px;font-weight:600;color:var(--text2);margin-left:8px;">${planText}</span>
+              </div>
+              <div style="font-size:11px;color:var(--text2);">
+                ${date} · ${time} · ${methodText}
+                ${payment.note ? ` · ${payment.note}` : ''}
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:18px;font-weight:700;color:var(--green);">${payment.amount}€</div>
+              <button onclick="downloadStoredInvoice('${shopId}', '${paymentId}')" 
+                style="margin-top:8px;padding:6px 12px;background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">
+                📄 İndir
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    html += `</div>`;
+  }
+  
+  document.getElementById('paymentHistoryContent').innerHTML = html;
+  document.getElementById('paymentHistoryModal').classList.add('open');
+};
+
+window.filterPaymentHistory = function() {
+  const search = document.getElementById('paymentSearch').value.toLowerCase();
+  const items = document.querySelectorAll('.payment-item');
+  
+  items.forEach(item => {
+    const invoice = item.getAttribute('data-invoice').toLowerCase();
+    const date = item.getAttribute('data-date').toLowerCase();
+    
+    if (invoice.includes(search) || date.includes(search)) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+};
+
+window.downloadStoredInvoice = async function(shopId, paymentId) {
+  const paymentRef = ref(db, `payments/${shopId}/${paymentId}`);
+  const snapshot = await get(paymentRef);
+  
+  if (!snapshot.exists()) {
+    showToast('Fatura bulunamadı', 'error');
+    return;
+  }
+  
+  const payment = snapshot.val();
+  if (!payment.invoiceHTML) {
+    showToast('Fatura HTML bulunamadı', 'error');
+    return;
+  }
+  
+  downloadInvoiceFromHTML(payment.invoiceHTML, payment.invoiceNumber);
+  showToast('✓ Fatura indiriliyor: ' + payment.invoiceNumber, 'success');
+};
+
+window.closePaymentHistory = function() {
+  document.getElementById('paymentHistoryModal').classList.remove('open');
 };
 
 // ── RECHNUNG / FATURA SİSTEMİ ──
@@ -4038,5 +4183,22 @@ await initDemo();
 renderDashboard();
 
 </script>
+
+<!-- Payment History Modal -->
+<div id="paymentHistoryModal" class="overlay">
+  <div class="modal" style="max-width:900px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">📊 Ödeme Geçmişi</div>
+        <div class="modal-sub" id="historyModalSubtitle">Tüm faturalar ve ödemeler</div>
+      </div>
+      <button class="close-btn" onclick="closePaymentHistory()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:600px;overflow-y:auto;" id="paymentHistoryContent">
+      <!-- Content loaded dynamically -->
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
