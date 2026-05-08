@@ -2065,14 +2065,25 @@ window.toggleSandboxMode = function() {
 
 // ── PAYMENT HISTORY ──
 window.openPaymentHistory = async function(shopId) {
-  const shop = shops[shopId];
-  if (!shop) return;
+  alert('Geçmiş butonu çalışıyor! Shop ID: ' + shopId);
+  console.log('🔍 Opening payment history for:', shopId);
   
+  const shop = shops[shopId];
+  if (!shop) {
+    console.error('❌ Shop not found:', shopId);
+    showToast('Dükkân bulunamadı', 'error');
+    return;
+  }
+  
+  console.log('✓ Shop found:', shop.name);
   document.getElementById('historyModalSubtitle').textContent = `${shop.name} - Tüm ödemeler`;
   
-  // Firebase'den ödemeleri çek
-  const paymentsRef = ref(db, `payments/${shopId}`);
-  const snapshot = await get(paymentsRef);
+  try {
+    // Firebase'den ödemeleri çek
+    const paymentsRef = ref(db, `payments/${shopId}`);
+    console.log('🔥 Fetching payments from Firebase...');
+    const snapshot = await get(paymentsRef);
+    console.log('✓ Firebase response:', snapshot.exists() ? 'Has data' : 'Empty');
   
   let html = '';
   
@@ -2139,6 +2150,12 @@ window.openPaymentHistory = async function(shopId) {
   
   document.getElementById('paymentHistoryContent').innerHTML = html;
   document.getElementById('paymentHistoryModal').classList.add('open');
+  console.log('✓ Modal opened');
+  
+  } catch (error) {
+    console.error('❌ Error opening payment history:', error);
+    showToast('Hata: ' + error.message, 'error');
+  }
 };
 
 window.filterPaymentHistory = function() {
