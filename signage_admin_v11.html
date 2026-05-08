@@ -2060,6 +2060,60 @@ function renderSettingsView() {
     </div>
     ` : ''}
   </div>
+
+  <!-- ── TEHLİKE BÖLGESİ ── -->
+  <div style="margin-top:32px;">
+    <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+      <span style="flex:1;height:1px;background:rgba(255,82,82,0.2);"></span>
+      ⚠️ Tehlike Bölgesi
+      <span style="flex:1;height:1px;background:rgba(255,82,82,0.2);"></span>
+    </div>
+    <div style="background:rgba(255,82,82,0.04);border:1px solid rgba(255,82,82,0.2);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Ödemeleri Sil -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">🧾 Tüm Ödemeleri Sil</div>
+          <div style="font-size:11px;color:var(--text2);">Firebase'deki tüm <code style="background:var(--s3);padding:1px 5px;border-radius:3px;">payments/</code> verisini siler. Dükkânlar etkilenmez.</div>
+        </div>
+        <button onclick="firebaseDeleteNode('payments','tüm ödeme geçmişi')" style="background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.3);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;">🗑 Ödemeleri Sil</button>
+      </div>
+
+      <div style="height:1px;background:rgba(255,82,82,0.12);"></div>
+
+      <!-- Ekranları Sil -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">📺 Tüm Ekranları Sil</div>
+          <div style="font-size:11px;color:var(--text2);">Firebase'deki tüm <code style="background:var(--s3);padding:1px 5px;border-radius:3px;">screens/</code> verisini siler.</div>
+        </div>
+        <button onclick="firebaseDeleteNode('screens','tüm ekran verisi')" style="background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.3);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;">🗑 Ekranları Sil</button>
+      </div>
+
+      <div style="height:1px;background:rgba(255,82,82,0.12);"></div>
+
+      <!-- Dükkânları Sil -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">🏪 Tüm Dükkânları Sil</div>
+          <div style="font-size:11px;color:var(--text2);">Firebase'deki tüm <code style="background:var(--s3);padding:1px 5px;border-radius:3px;">shops/</code> verisini siler. <strong style="color:var(--red);">Geri alınamaz!</strong></div>
+        </div>
+        <button onclick="firebaseDeleteNode('shops','tüm dükkân verisi')" style="background:rgba(255,82,82,0.1);color:var(--red);border:1px solid rgba(255,82,82,0.3);border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;">🗑 Dükkânları Sil</button>
+      </div>
+
+      <div style="height:1px;background:rgba(255,82,82,0.12);"></div>
+
+      <!-- HEPSİNİ SİL -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px;">💥 TÜM VERİYİ SIFIRLA</div>
+          <div style="font-size:11px;color:var(--text2);">shops + screens + payments + content — Firebase tamamen temizlenir.</div>
+        </div>
+        <button onclick="firebaseDeleteAll()" style="background:rgba(255,82,82,0.15);color:var(--red);border:2px solid rgba(255,82,82,0.5);border-radius:7px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;letter-spacing:0.3px;">💥 TÜMÜNÜ SİL</button>
+      </div>
+    </div>
+  </div>
+
   `;
 }
 
@@ -2082,7 +2136,64 @@ window.toggleSandboxMode = function() {
   var enabled = document.getElementById('sandboxToggle').checked;
   localStorage.setItem('signage_sandbox_mode', enabled ? 'true' : 'false');
   showToast(enabled ? '🧪 Sandbox modu aktif' : '✓ Production modu aktif', 'success');
-  renderSettingsView(); // Refresh
+  renderSettingsView();
+};
+
+// ── FİREBASE SİLME FONKSİYONLARI ──
+window.firebaseDeleteNode = async function(nodePath, label) {
+  const confirmed = confirm(
+    `⚠️ DİKKAT!\n\n"${label}" silinecek.\n\nFirebase'den kalıcı olarak kaldırılır, GERİ ALINAMAZ!\n\nDevam etmek istiyor musunuz?`
+  );
+  if (!confirmed) return;
+
+  // İkinci onay
+  const double = confirm(`Son kez soruyorum: "${label}" gerçekten silinsin mi?`);
+  if (!double) return;
+
+  try {
+    showToast('⏳ Siliniyor...', 'success');
+    const nodeRef = ref(db, nodePath);
+    await remove(nodeRef);
+    showToast(`✅ "${label}" Firebase'den silindi`, 'success');
+
+    // Eğer shops silindiyse local state'i de temizle
+    if (nodePath === 'shops') {
+      shops = {};
+      renderSidebar();
+    }
+    renderSettingsView();
+  } catch(e) {
+    showToast('❌ Hata: ' + e.message, 'error');
+    console.error(e);
+  }
+};
+
+window.firebaseDeleteAll = async function() {
+  const confirmed = confirm(
+    '💥 TÜM VERİ SİLİNECEK!\n\n• shops\n• screens\n• payments\n• content\n\nBu işlem GERİ ALINAMAZ. Firebase tamamen sıfırlanır!\n\nDevam etmek istiyor musunuz?'
+  );
+  if (!confirmed) return;
+
+  const code = prompt('Onaylamak için "SIL" yazın:');
+  if (code !== 'SIL') {
+    showToast('İptal edildi', 'error');
+    return;
+  }
+
+  try {
+    showToast('⏳ Tüm veri siliniyor...', 'success');
+    const nodes = ['shops', 'screens', 'payments', 'content'];
+    for (const node of nodes) {
+      await remove(ref(db, node));
+    }
+    shops = {};
+    renderSidebar();
+    showToast('✅ Firebase tamamen sıfırlandı', 'success');
+    renderSettingsView();
+  } catch(e) {
+    showToast('❌ Hata: ' + e.message, 'error');
+    console.error(e);
+  }
 };
 
 // ── PAYMENT HISTORY ──
