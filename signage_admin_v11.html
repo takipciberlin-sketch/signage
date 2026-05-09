@@ -1535,6 +1535,7 @@ function renderScreenCard(sid, screen, shopId) {
         <div class="screen-name">${screen.name || 'Ekran'}</div>
         <div class="screen-id">${sid}</div>
         <button onclick="copyTvLink('${shopId}','${sid}')" style="margin-top:6px;background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.3);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;">📋 TV Linkini Kopyala</button>
+        <button onclick="showTvQr('${shopId}','${sid}','${(screen.name || 'Ekran').replace(/'/g, '')}')" style="margin-top:6px;margin-left:6px;background:rgba(155,89,182,0.1);color:#c39bd3;border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;">📱 QR</button>
       </div>
       <div class="status-pill ${st}">
         <div class="status-dot ${st}"></div>
@@ -3364,6 +3365,38 @@ function fallbackCopy(text) {
   }
   document.body.removeChild(ta);
 }
+
+// ── TV LINKI QR KOD ──
+window.showTvQr = function(shopId, screenId, screenName) {
+  const url = `${TV_BASE_URL}?shop=${encodeURIComponent(shopId)}&screen=${encodeURIComponent(screenId)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&margin=10`;
+
+  // Eski modal varsa kaldır
+  const existing = document.getElementById('tvQrOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tvQrOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = `
+    <div style="background:#1a1a1a;border:1px solid rgba(0,229,255,0.3);border-radius:14px;padding:24px;max-width:440px;width:100%;text-align:center;font-family:'Inter',sans-serif;">
+      <div style="font-size:11px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">TV Bağlantı QR Kodu</div>
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:18px;">${screenName}</div>
+      <div style="background:#fff;padding:16px;border-radius:10px;display:inline-block;margin-bottom:16px;">
+        <img src="${qrUrl}" alt="QR Kod" style="display:block;width:280px;height:280px;" />
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">Telefonla okutun veya kopyalayın:</div>
+      <div style="background:#0a0a0a;border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 10px;font-size:10px;color:#00e5ff;word-break:break-all;font-family:monospace;margin-bottom:16px;">${url}</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="copyTvLink('${shopId}','${screenId}')" style="flex:1;background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.3);border-radius:7px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">📋 Linki Kopyala</button>
+        <button onclick="document.getElementById('tvQrOverlay').remove()" style="flex:1;background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Kapat</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
 
 // ── CLOUDINARY UPLOAD ──
 const CLOUD_NAME = 'dovyxuyhe';
