@@ -1519,12 +1519,32 @@ function renderShopDetail(shopId) {
   </div>
 
   ${(shop.planFee || shop.fee) ? `
-  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-    <div>
-      <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">💰 Bu Ay Ödeme</div>
-      <div style="font-size:13px;color:var(--text);">
-        Son ödeme: <strong>${shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') + (shop.lastPaidMethod === 'cash' ? ' · 💵 Nakit' : shop.lastPaidMethod === 'bank' ? ' · 🏦 Banka' : '') : '—'}</strong>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">💰 Bu Ay Ödeme</div>
+        <div style="font-size:13px;color:var(--text);">
+          Son ödeme: <strong>${shop.lastPaidAt ? new Date(shop.lastPaidAt).toLocaleDateString('tr-TR') + (shop.lastPaidMethod === 'cash' ? ' · 💵 Nakit' : shop.lastPaidMethod === 'bank' ? ' · 🏦 Banka' : '') : '—'}</strong>
+        </div>
       </div>
+      ${(() => {
+        const paymentStatus = getPaymentStatus(shop);
+        const badge = paymentStatus.status === 'overdue' 
+          ? `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.3);">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
+              <span style="font-size:12px;font-weight:700;color:var(--red);">🔴 GECİKMİŞ · ${paymentStatus.label}</span>
+            </div>`
+          : paymentStatus.status === 'soon'
+          ? `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></div>
+              <span style="font-size:12px;font-weight:700;color:var(--amber);">⚠️ YAKLAŞIYOR · ${paymentStatus.label}</span>
+            </div>`
+          : `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+              <span style="font-size:12px;font-weight:700;color:var(--green);">✓ GÜNCEL · ${paymentStatus.label}</span>
+            </div>`;
+        return badge;
+      })()}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="markPaid('${shopId}','cash')" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">💵 ${sandboxMode ? 'Test Nakit' : 'Nakit Ödendi'}</button>
