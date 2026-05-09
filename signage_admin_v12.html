@@ -2269,7 +2269,7 @@ let currentInvoiceShopId = null;
 
 window.openInvoiceSendModal = function(shopId) {
   currentInvoiceShopId = shopId;
-  const shop = SHOPS[shopId];
+  const shop = shops[shopId];
   if (!shop) return;
   
   document.getElementById('invoiceSendShopName').textContent = shop.name || shopId;
@@ -2293,7 +2293,7 @@ window.sendInvoiceEmail = async function() {
     return;
   }
   
-  const shop = SHOPS[currentInvoiceShopId];
+  const shop = shops[currentInvoiceShopId];
   const recipientEmail = document.getElementById('invoiceRecipientEmail').value.trim();
   const amount = document.getElementById('invoiceAmount').value;
   const description = document.getElementById('invoiceDescription').value.trim();
@@ -2344,7 +2344,7 @@ window.copyWhatsAppMessage = function() {
 };
 
 function updateWhatsAppPreview() {
-  const shop = SHOPS[currentInvoiceShopId];
+  const shop = shops[currentInvoiceShopId];
   const amount = document.getElementById('invoiceAmount').value;
   const description = document.getElementById('invoiceDescription').value;
   const invoiceNumber = 'INV-' + Date.now();
