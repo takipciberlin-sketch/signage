@@ -1531,9 +1531,10 @@ function renderScreenCard(sid, screen, shopId) {
   return `
   <div class="screen-card ${st}">
     <div class="screen-header">
-      <div>
+      <div style="flex:1;min-width:0;">
         <div class="screen-name">${screen.name || 'Ekran'}</div>
         <div class="screen-id">${sid}</div>
+        <button onclick="copyTvLink('${shopId}','${sid}')" style="margin-top:6px;background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.3);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;">📋 TV Linkini Kopyala</button>
       </div>
       <div class="status-pill ${st}">
         <div class="status-dot ${st}"></div>
@@ -3333,6 +3334,36 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 window.showToast = showToast;
+
+// ── TV LINKINI KOPYALA ──
+const TV_BASE_URL = 'https://takipciberlin-sketch.github.io/signage/signage_screen_v4.html';
+window.copyTvLink = function(shopId, screenId) {
+  const url = `${TV_BASE_URL}?shop=${encodeURIComponent(shopId)}&screen=${encodeURIComponent(screenId)}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('✓ TV linki kopyalandı', 'success');
+    }).catch(() => {
+      fallbackCopy(url);
+    });
+  } else {
+    fallbackCopy(url);
+  }
+};
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('✓ TV linki kopyalandı', 'success');
+  } catch (e) {
+    showToast('Kopyalama başarısız — link: ' + text, 'error');
+  }
+  document.body.removeChild(ta);
+}
 
 // ── CLOUDINARY UPLOAD ──
 const CLOUD_NAME = 'dovyxuyhe';
