@@ -713,10 +713,15 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
 </div>
 
 <!-- FATURA GÖNDER MODAL -->
-<div class="modal-overlay" id="invoiceSendModal">
+<div class="modal-overlay" id="invoiceSendModal" onclick="if(event.target===this) closeModal('invoiceSendModal')">
   <div class="modal" style="width:600px;">
-    <div class="modal-title">📧 Fatura Gönder</div>
-    <div class="modal-sub" id="invoiceSendShopName"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+      <div>
+        <div class="modal-title">📧 Fatura Gönder</div>
+        <div class="modal-sub" id="invoiceSendShopName"></div>
+      </div>
+      <button onclick="closeModal('invoiceSendModal')" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;padding:0;line-height:1;opacity:0.6;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">×</button>
+    </div>
     
     <div style="margin:20px 0;">
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
