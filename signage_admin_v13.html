@@ -1710,7 +1710,7 @@ function renderScreenCards(screenArr) {
 }
 
 // ── PAYMENTS VIEW ──
-// ── PRORATED BILLING (ORANTILI FATURALANDIRMA) ──
+// ── PRORATED BILLING (PLAN BAZLI ORANTILI FATURALANDIRMA) ──
 
 // Plan fiyat tablosu
 const PLAN_PRICES = {
@@ -1729,47 +1729,74 @@ const PLAN_LIMITS = {
   enterprise: 10 // 10 TV dahil
 };
 
-// Bir sonraki fatura kesim tarihini hesapla
-function getNextBillingDate(shop) {
+// Plan tipinden ay sayısı
+function getPlanMonths(subscriptionType) {
+  switch(subscriptionType) {
+    case '3month': return 3;
+    case '6month': return 6;
+    case '9month': return 9;
+    case 'yearly': return 12;
+    case 'monthly':
+    default: return 1;
+  }
+}
+
+// Plan bitiş tarihi (Firebase'de varsa onu kullan, yoksa hesapla)
+function getPlanEndDate(shop) {
   if (shop.planEndDate) {
     return new Date(shop.planEndDate);
   }
   
-  const lastPaid = shop.lastPaidAt ? new Date(shop.lastPaidAt) : new Date(shop.createdAt || Date.now());
-  const nextBilling = new Date(lastPaid);
-  nextBilling.setMonth(nextBilling.getMonth() + 1);
-  return nextBilling;
+  const startDate = shop.planStartDate ? new Date(shop.planStartDate) : 
+                    (shop.lastPaidAt ? new Date(shop.lastPaidAt) : new Date(shop.createdAt || Date.now()));
+  const months = getPlanMonths(shop.subscriptionType);
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + months);
+  return endDate;
 }
 
-// Kalan gün sayısını hesapla
+// Plan bitimine kalan gün sayısı
 function getRemainingDays(shop) {
   const today = new Date();
-  const nextBilling = getNextBillingDate(shop);
-  const diffMs = nextBilling - today;
+  const endDate = getPlanEndDate(shop);
+  const diffMs = endDate - today;
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   return Math.max(0, diffDays);
 }
 
-// Toplam dönem gün sayısı (genellikle 30)
-function getTotalPeriodDays(shop) {
-  return 30; // Aylık abonelik standartı
+// Plan bitimine kalan ay sayısı (decimal)
+function getRemainingMonths(shop) {
+  const remainingDays = getRemainingDays(shop);
+  return remainingDays / 30; // Ortalama ay = 30 gün
 }
 
-// Prorated fark hesaplama
-// oldPrice → yeni fiyatın eski fiyattan farkı
-// newPrice → yeni aylık fiyat
-// remainingDays → faturalandırmaya kalan gün
-function calculateProratedAmount(oldPrice, newPrice, remainingDays, totalDays = 30) {
-  if (newPrice <= oldPrice) return 0; // Düşürme durumunda ek ücret yok
-  const priceDiff = newPrice - oldPrice;
-  const dailyDiff = priceDiff / totalDays;
-  return parseFloat((dailyDiff * remainingDays).toFixed(2));
+// ═══ ANA HESAPLAMA: PLAN DEĞİŞİKLİĞİ FARKI ═══
+// 
+// MANTIK:
+// - Aylık plan: kalan AY * fark (yani 1 ay için orantı)
+// - 3/6/9/Yıllık plan: kalan AY SAYISI * fark
+//
+// Örnek:
+// - Yıllık plan, 11.5 ay kaldı, +€10/ay TV → €115 ek fatura
+// - Aylık plan, 15 gün kaldı, +€10/ay TV → €5 ek fatura
+
+// Plan upgrade için fark hesaplama
+function calculateProratedAmount(oldMonthlyFee, newMonthlyFee, shop) {
+  if (newMonthlyFee <= oldMonthlyFee) return 0;
+  
+  const monthlyDiff = newMonthlyFee - oldMonthlyFee;
+  const remainingMonths = getRemainingMonths(shop);
+  
+  // Kalan ay × fark
+  const total = monthlyDiff * remainingMonths;
+  return parseFloat(total.toFixed(2));
 }
 
-// Yeni TV için prorated ücret
-function calculateNewTvProratedAmount(remainingDays, totalDays = 30) {
-  const dailyRate = EXTRA_TV_PRICE / totalDays;
-  return parseFloat((dailyRate * remainingDays).toFixed(2));
+// Yeni TV için ek ücret (kalan dönem için)
+function calculateNewTvProratedAmount(shop) {
+  const remainingMonths = getRemainingMonths(shop);
+  const total = EXTRA_TV_PRICE * remainingMonths;
+  return parseFloat(total.toFixed(2));
 }
 
 // Mevcut aylık ücret (plan + ek TV'ler)
@@ -1781,18 +1808,17 @@ function calculateMonthlyFee(shop, screenCount) {
   return planPrice + extraFee;
 }
 
-// Bekleyen ek ücretler (pendingCharges)
+// Bekleyen ek ücretler
 function getPendingCharges(shop) {
   return shop.pendingCharges || [];
 }
 
-// Bekleyen ücret toplamı
 function getPendingChargesTotal(shop) {
   const charges = getPendingCharges(shop);
   return charges.reduce((sum, c) => sum + (c.amount || 0), 0);
 }
 
-// Bir sonraki faturanın detayı
+// Sonraki fatura detayı
 function calculateNextInvoice(shop, screenCount) {
   const monthlyFee = calculateMonthlyFee(shop, screenCount);
   const pendingTotal = getPendingChargesTotal(shop);
@@ -3543,15 +3569,22 @@ window.addShop = async function() {
     
     if (planChanged && oldShop.planFee && fee > oldShop.planFee) {
       const remainingDays = getRemainingDays(oldShop);
-      const totalDays = getTotalPeriodDays(oldShop);
-      proratedAmount = calculateProratedAmount(oldShop.planFee, fee, remainingDays, totalDays);
+      const remainingMonths = getRemainingMonths(oldShop);
+      proratedAmount = calculateProratedAmount(oldShop.planFee, fee, oldShop);
       
       if (proratedAmount > 0) {
+        const planLabel = (oldShop.subscriptionType === 'monthly') ? 'Aylık' : 
+                          (oldShop.subscriptionType === '3month') ? '3 Aylık' :
+                          (oldShop.subscriptionType === '6month') ? '6 Aylık' :
+                          (oldShop.subscriptionType === '9month') ? '9 Aylık' : 'Yıllık';
+        
         const confirmMsg = 
-          `⚠️ PLAN DEĞİŞİKLİĞİ - PRORATED ÜCRET\n\n` +
-          `Aylık ücret: €${oldShop.planFee} → €${fee}\n` +
-          `📅 Bu dönem kalan: ${remainingDays} gün\n` +
-          `💸 Sonraki faturaya eklenecek fark: €${proratedAmount.toFixed(2)}\n\n` +
+          `⚠️ PLAN DEĞİŞİKLİĞİ - FARK FATURASI\n\n` +
+          `📋 Mevcut Plan: ${planLabel}\n` +
+          `💰 Aylık ücret: €${oldShop.planFee} → €${fee} (+€${(fee - oldShop.planFee).toFixed(2)}/ay)\n\n` +
+          `📅 Plan bitimine kalan: ${remainingDays} gün (~${remainingMonths.toFixed(1)} ay)\n` +
+          `💸 Tek seferlik fark faturası: €${proratedAmount.toFixed(2)}\n\n` +
+          `Bu fatura kalan ${remainingMonths.toFixed(1)} aylık fark ücretini kapsar.\n\n` +
           `Plan değişikliği onaylansın mı?`;
         
         if (!confirm(confirmMsg)) {
@@ -3563,7 +3596,7 @@ window.addShop = async function() {
           id: 'plan_' + Date.now(),
           type: 'plan_upgrade',
           amount: proratedAmount,
-          description: `Plan yükseltme: €${oldShop.planFee}→€${fee} (${remainingDays} gün)`,
+          description: `Plan yükseltme: €${oldShop.planFee}→€${fee} (${remainingMonths.toFixed(1)} ay)`,
           addedAt: Date.now()
         });
       }
@@ -3737,19 +3770,24 @@ window.addScreen = async function(shopId) {
     if (n > planLimit) {
       // Plan limiti aşılıyor - prorated ücret hesapla
       const remainingDays = getRemainingDays(shop);
-      const totalDays = getTotalPeriodDays(shop);
-      const proratedAmount = calculateNewTvProratedAmount(remainingDays, totalDays);
+      const remainingMonths = getRemainingMonths(shop);
+      const proratedAmount = calculateNewTvProratedAmount(shop);
       const newMonthlyFee = calculateMonthlyFee(shop, n);
       const oldMonthlyFee = calculateMonthlyFee(shop, currentScreenCount);
+      const planType = shop.subscriptionType || 'monthly';
+      const planLabel = planType === 'monthly' ? 'Aylık' : 
+                        planType === '3month' ? '3 Aylık' :
+                        planType === '6month' ? '6 Aylık' :
+                        planType === '9month' ? '9 Aylık' : 'Yıllık';
       
       const confirmMsg = 
         `⚠️ EK TV ÜCRETİ\n\n` +
         `${n}. TV ekleniyor (plan limiti: ${planLimit})\n\n` +
-        `💰 Aylık ücret değişimi:\n` +
-        `  Eski: €${oldMonthlyFee.toFixed(2)}\n` +
-        `  Yeni: €${newMonthlyFee.toFixed(2)} (+€${EXTRA_TV_PRICE}/ay)\n\n` +
-        `📅 Bu dönem kalan: ${remainingDays} gün\n` +
-        `💸 Sonraki faturaya eklenecek: €${proratedAmount.toFixed(2)}\n\n` +
+        `📋 Plan: ${planLabel}\n` +
+        `💰 Aylık ücret: €${oldMonthlyFee.toFixed(2)} → €${newMonthlyFee.toFixed(2)} (+€${EXTRA_TV_PRICE}/ay)\n\n` +
+        `📅 Plan bitimine kalan: ${remainingDays} gün (~${remainingMonths.toFixed(1)} ay)\n` +
+        `💸 Tek seferlik fark faturası: €${proratedAmount.toFixed(2)}\n\n` +
+        `Bu fatura kalan ${remainingMonths.toFixed(1)} aylık ek TV ücretini kapsar.\n\n` +
         `Devam edilsin mi?`;
       
       if (!confirm(confirmMsg)) {
@@ -3762,7 +3800,7 @@ window.addScreen = async function(shopId) {
         id: 'tv_' + Date.now(),
         type: 'extra_tv',
         amount: proratedAmount,
-        description: `${n}. TV eklendi (orantılı: ${remainingDays} gün)`,
+        description: `${n}. TV (${remainingMonths.toFixed(1)} ay × €${EXTRA_TV_PRICE})`,
         addedAt: Date.now()
       });
       
@@ -3771,7 +3809,7 @@ window.addScreen = async function(shopId) {
         planFee: newMonthlyFee  // Yeni aylık ücreti güncelle
       });
       
-      showToast(`✓ Ek TV eklendi · €${proratedAmount.toFixed(2)} sonraki faturaya eklendi`, 'success');
+      showToast(`✓ Ek TV eklendi · €${proratedAmount.toFixed(2)} fark faturası oluşturuldu`, 'success');
     }
   }
   
