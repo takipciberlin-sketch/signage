@@ -779,7 +779,7 @@ function updateTicker(data) {
   if (msgs.length === 0) msgs = [{ text: 'Hoş Geldiniz', imageUrl: '' }];
   
   var newKey = JSON.stringify(msgs) + speed + color;
-  if (newKey !== lastTickerKey) {
+  if (true) {
     lastTickerKey = newKey;
     // Her mesajı: [PNG (varsa)] [Metin] • şeklinde render et
     var combined = msgs.map(function(m) {
