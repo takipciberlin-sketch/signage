@@ -747,11 +747,14 @@ function updateTicker(data) {
   
   if (!data.tickerEnabled) {
     bar.style.display = 'none';
+    document.getElementById('menuImage').style.height = '100vh';
+    document.getElementById('menuVideo').style.height = '100vh';
     return;
   }
   
   bar.style.display = 'flex';
-  
+  document.getElementById('menuImage').style.height = 'calc(100vh - 50px)';
+  document.getElementById('menuVideo').style.height = 'calc(100vh - 50px)';
   // Hız ayarı
   var speed = data.tickerSpeed || 60;
   var content = document.getElementById('tickerContent');
