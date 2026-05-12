@@ -767,7 +767,7 @@ function updateTicker(data) {
   // Yazıları birleştir
   var msgs = data.tickerMessages || [];
   if (typeof msgs === 'string') msgs = [msgs];
-  if (!Array.isArray(msgs)) msgs = [];
+  
   
   // Eski format (string) ve yeni format (obje) destekle
   msgs = msgs.map(function(m) {
