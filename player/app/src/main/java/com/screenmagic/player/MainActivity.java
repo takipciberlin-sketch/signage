@@ -55,4 +55,70 @@ public class MainActivity extends Activity {
         EditText shopInput = new EditText(this);
         shopInput.setHint("shop_1234567890");
         shopInput.setTextColor(0xFFffffff);
-        shopInput.setHintTextColor(0xFF666
+        shopInput.setHintTextColor(0xFF666666);
+        shopInput.setBackgroundColor(0xFF1a1a1a);
+        shopInput.setPadding(20, 16, 20, 16);
+        LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(-1, -2);
+        p1.setMargins(0, 8, 0, 24);
+        layout.addView(shopInput, p1);
+
+        android.widget.TextView label2 = new android.widget.TextView(this);
+        label2.setText("Screen ID:");
+        label2.setTextColor(0xFFffffff);
+        label2.setTextSize(16);
+        layout.addView(label2);
+
+        EditText screenInput = new EditText(this);
+        screenInput.setHint("screen_1");
+        screenInput.setTextColor(0xFFffffff);
+        screenInput.setHintTextColor(0xFF666666);
+        screenInput.setBackgroundColor(0xFF1a1a1a);
+        screenInput.setPadding(20, 16, 20, 16);
+        LinearLayout.LayoutParams p2 = new LinearLayout.LayoutParams(-1, -2);
+        p2.setMargins(0, 8, 0, 40);
+        layout.addView(screenInput, p2);
+
+        Button btn = new Button(this);
+        btn.setText("BAŞLAT");
+        btn.setBackgroundColor(0xFF00e676);
+        btn.setTextColor(0xFF000000);
+        btn.setTextSize(18);
+        layout.addView(btn);
+
+        btn.setOnClickListener(v -> {
+            String shop = shopInput.getText().toString().trim();
+            String screen = screenInput.getText().toString().trim();
+            if (!shop.isEmpty() && !screen.isEmpty()) {
+                prefs.edit().putString("shopId", shop).putString("screenId", screen).apply();
+                showPlayer(shop, screen);
+            }
+        });
+
+        setContentView(layout);
+    }
+
+    void showPlayer(String shopId, String screenId) {
+        // Tam ekran - Android 11+
+        getWindow().setDecorFitsSystemWindows(false);
+        WindowInsetsController controller = getWindow().getInsetsController();
+        if (controller != null) {
+            controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+            controller.setSystemBarsBehavior(
+                WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            );
+        }
+
+        webView = new WebView(this);
+        WebSettings s = webView.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setMediaPlaybackRequiresUserGesture(false);
+        s.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        webView.setWebViewClient(new WebViewClient());
+
+        String url = "https://takipciberlin-sketch.github.io/signage/signage_screen_v4.html"
+            + "?shop=" + shopId + "&screen=" + screenId;
+        webView.loadUrl(url);
+        setContentView(webView);
+    }
+}
