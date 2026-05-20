@@ -48,7 +48,7 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 .wait-msg { font-size:14px; color:#718096; }
 .wait-status { font-size:12px; color:#4a5568; margin-top:8px; }
 
-#menuFrame { display:none; position:fixed; inset:0; width:100vw; height:100vh; border:none; }
+#menuFrame { display:none; position:fixed; inset:0; width:100vw; height:100vh; border:none; transition:opacity 0.4s ease; }
 
 #statusBar {
   position:fixed; bottom:12px; right:12px;
@@ -226,7 +226,7 @@ html, body { width:100%; height:100vh; background:#000; font-family:sans-serif; 
 </div>
 
 <iframe id="menuFrame" src="about:blank" allowfullscreen></iframe>
-<img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;z-index:1;">
+<img id="menuImage" src="" alt="" style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;z-index:1;transition:opacity 0.4s ease;">
 <video id="menuVideo" autoplay muted loop playsinline style="display:none;position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;z-index:1;"></video>
 
 <!-- CANVAS ARKAPLAN VİDEOSU (tüm menünün arkasında döner) -->
@@ -474,31 +474,62 @@ async function loadWithCache(url, type) {
 initCache();
 
 function loadContent(url) {
-  document.getElementById('menuFrame').style.display = 'none';
-  document.getElementById('menuImage').style.display = 'none';
-  document.getElementById('menuVideo').style.display = 'none';
-  document.getElementById('waitScreen').style.display = 'none';
-
   var lower = url.toLowerCase();
+  var waitScreen = document.getElementById('waitScreen');
+  waitScreen.style.display = 'none';
 
   if (lower.match(/\.(jpg|jpeg|png|webp|gif|bmp)(\?|$)/)) {
-    // GÖRSEL - cache ile yükle
+    // GÖRSEL - önce yükle, sonra geçiş yap
     loadWithCache(url, 'image').then(function(src) {
-      document.getElementById('menuImage').src = src;
-      document.getElementById('menuImage').style.display = 'block';
+      var img = document.getElementById('menuImage');
+      var oldFrame = document.getElementById('menuFrame');
+      var oldVideo = document.getElementById('menuVideo');
+      // Yeni resmi arka planda hazırla
+      var tempImg = new Image();
+      tempImg.onload = function() {
+        // Geçiş: eski içerik fade out, yeni fade in
+        oldFrame.style.opacity = '0';
+        oldVideo.style.opacity = '0';
+        setTimeout(function() {
+          oldFrame.style.display = 'none';
+          oldFrame.style.opacity = '1';
+          oldVideo.style.display = 'none';
+          oldVideo.style.opacity = '1';
+          img.src = src;
+          img.style.display = 'block';
+          img.style.opacity = '0';
+          setTimeout(function() { img.style.opacity = '1'; }, 50);
+        }, 300);
+      };
+      tempImg.src = src;
     });
   } else if (lower.match(/\.(mp4|webm|mov)(\?|$)/)) {
     // VİDEO - cache ile yükle
     loadWithCache(url, 'video').then(function(src) {
       var vid = document.getElementById('menuVideo');
+      var oldFrame = document.getElementById('menuFrame');
+      var oldImg = document.getElementById('menuImage');
+      oldFrame.style.display = 'none';
+      oldImg.style.display = 'none';
       vid.src = src;
       vid.style.display = 'block';
+      vid.style.opacity = '0';
       vid.play().catch(function(){});
+      setTimeout(function() { vid.style.opacity = '1'; }, 100);
     });
   } else {
-    // HTML iframe - cache yok
-    document.getElementById('menuFrame').src = url;
-    document.getElementById('menuFrame').style.display = 'block';
+    // HTML iframe - geçiş
+    var frame = document.getElementById('menuFrame');
+    var oldImg = document.getElementById('menuImage');
+    var oldVideo = document.getElementById('menuVideo');
+    frame.style.opacity = '0';
+    frame.src = url;
+    frame.style.display = 'block';
+    frame.onload = function() {
+      oldImg.style.display = 'none';
+      oldVideo.style.display = 'none';
+      frame.style.opacity = '1';
+    };
   }
 
   if (navigator.onLine) {
