@@ -107,6 +107,7 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
+        s.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         webView.setWebViewClient(new WebViewClient());
 
         String url = "https://takipciberlin-sketch.github.io/signage/signage_screen_v4.html"
