@@ -1147,6 +1147,8 @@ setTimeout(() => document.getElementById('loginPassword').focus(), 100);
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ── Firebase Config ──
 const firebaseConfig = {
@@ -1161,6 +1163,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
+const storage = getStorage(app);
 
 // ── State ──
 let shops   = {};
@@ -4030,8 +4033,6 @@ window.showTvQr = function(shopId, screenId, screenName) {
 };
 
 // ── CLOUDINARY UPLOAD ──
-const CLOUD_NAME = 'dckvjchus';
-const UPLOAD_PRESET = 'signage_unsigned';
 
 window.handleDrop = function(e) {
   e.preventDefault();
@@ -4039,14 +4040,14 @@ window.handleDrop = function(e) {
   dz.style.borderColor = 'var(--dim)';
   dz.style.background = 'var(--s2)';
   const file = e.dataTransfer.files[0];
-  if (file) uploadToCloudinary(file);
+  if (file) uploadToFirebaseStorage(file);
 }
 
 window.handleFileSelect = function(file) {
-  if (file) uploadToCloudinary(file);
+  if (file) uploadToFirebaseStorage(file);
 }
 
-async function uploadToCloudinary(file) {
+async function uploadToFirebaseStorage(file) {
   const prog = document.getElementById('uploadProgress');
   const bar = document.getElementById('uploadBar');
   const pct = document.getElementById('uploadPercent');
@@ -4061,62 +4062,39 @@ async function uploadToCloudinary(file) {
   sendBtn.disabled = true;
   sendBtn.textContent = '⏳ Yükleniyor...';
 
-  // Dosya türüne göre resource_type belirle
-  let resourceType = 'auto';
-
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET);
-  formData.append('resource_type', resourceType);
-
   try {
-    const xhr = new XMLHttpRequest();
+    // Dosya adını temizle
+    const timestamp = Date.now();
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filename = `menus/${timestamp}_${sanitizedName}`;
+    
+    // Firebase Storage'a yükle
+    const fileRef = storageRef(storage, filename);
+    
+    // Upload with progress (simulated since uploadBytes doesn't support progress)
+    bar.style.width = '50%';
+    pct.textContent = '50%';
+    
+    await uploadBytes(fileRef, file);
+    
+    bar.style.width = '100%';
+    pct.textContent = '100%';
+    
+    // URL al
+    const url = await getDownloadURL(fileRef);
 
-    xhr.upload.onprogress = function(e) {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        bar.style.width = percent + '%';
-        pct.textContent = percent + '%';
-      }
-    };
+    // Form alanlarını doldur
+    document.getElementById('pushMenuUrl').value = url;
+    document.getElementById('pushScreenName').value = file.name.replace(/\.[^.]+$/, '');
 
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        const res = JSON.parse(xhr.responseText);
-        const url = res.secure_url;
-
-        // Video ise video wrapper URL oluştur
-        let finalUrl = url;
-        if (file.type.startsWith('video/')) {
-          // Video dosyasını direkt iframe'de oynatmak için wrapper
-          finalUrl = url;
-        }
-
-        document.getElementById('pushMenuUrl').value = finalUrl;
-        document.getElementById('pushScreenName').value = file.name.replace(/\.[^.]+$/, '');
-
-        icon.textContent = '✅';
-        txt.textContent = 'Yüklendi: ' + file.name;
-        sendBtn.disabled = false;
-        sendBtn.textContent = '📤 Gönder';
-        showToast('✓ Dosya yüklendi', 'success');
-      } else {
-        throw new Error('Yükleme başarısız: ' + xhr.status);
-      }
-    };
-
-    xhr.onerror = function() {
-      icon.textContent = '❌';
-      txt.textContent = 'Hata! Tekrar dene.';
-      sendBtn.disabled = false;
-      sendBtn.textContent = '📤 Gönder';
-      showToast('⚠️ Yükleme başarısız', 'error');
-    };
-
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`);
-    xhr.send(formData);
+    icon.textContent = '✅';
+    txt.textContent = 'Yüklendi: ' + file.name;
+    sendBtn.disabled = false;
+    sendBtn.textContent = '📤 Gönder';
+    showToast('✓ Dosya yüklendi', 'success');
 
   } catch(err) {
+    console.error('Firebase Storage upload error:', err);
     icon.textContent = '❌';
     txt.textContent = 'Hata: ' + err.message;
     sendBtn.disabled = false;
