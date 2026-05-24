@@ -886,5 +886,16 @@ function doRestart() {
 }
 
 </script>
+<script>
+// Service Worker - offline cache
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/signage/service-worker.js")
+      .then(reg => console.log("[SW] Registered"))
+      .catch(err => console.log("[SW] Failed:", err));
+  });
+}
+</script>
+
 </body>
 </html>
