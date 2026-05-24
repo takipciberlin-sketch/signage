@@ -1,26 +1,33 @@
-plugins {
-    id 'com.android.application'
-}
+apply plugin: 'com.android.application'
 
 android {
-    compileSdk 34
     namespace 'com.screenmagic.player'
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.screenmagic.player"
         minSdk 21
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
     }
 
     buildTypes {
         release {
             minifyEnabled false
         }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core:1.12.0'
 }

@@ -1,31 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.screenmagic.player">
+
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- TV özelliği - zorunlu değil -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
     <application
-        android:allowBackup="true"
         android:label="ScreenMagic Player"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:allowBackup="true"
+        android:supportsRtl="true">
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+
+            <!-- Normal launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- TV Launcher (Leanback) -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+
+            <!-- HOME - cihaz açılınca varsayılan launcher olabilir -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
+        <!-- Boot receiver - cihaz açılınca uygulamayı başlat -->
         <receiver
             android:name=".BootReceiver"
-            android:exported="true">
-            <intent-filter>
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter android:priority="999">
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
     </application>
-
 </manifest>

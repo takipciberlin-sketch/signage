@@ -7,9 +7,15 @@ import android.content.Intent;
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+        String action = intent.getAction();
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action)
+            || "android.intent.action.QUICKBOOT_POWERON".equals(action)
+            || "com.htc.intent.action.QUICKBOOT_POWERON".equals(action)) {
+            
             Intent i = new Intent(context, MainActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
             context.startActivity(i);
         }
     }
